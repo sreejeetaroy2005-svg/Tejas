@@ -1,0 +1,39 @@
+# Environment / secrets
+.env
+.env.local
+*.env
+.env.*
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+*.egg-info/
+dist/
+build/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+
+# Data files (large / generated)
+backend/data/*.csv
+!backend/data/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
