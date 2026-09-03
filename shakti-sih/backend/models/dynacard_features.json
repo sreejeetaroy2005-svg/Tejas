@@ -1,0 +1,24 @@
+{
+  "feature_columns": [
+    "max_load",
+    "min_load",
+    "load_range",
+    "mean_load",
+    "std_load",
+    "enclosed_area",
+    "SPM",
+    "stroke_length",
+    "temperature",
+    "viscosity",
+    "fluid_level",
+    "pump_depth",
+    "production_rate"
+  ],
+  "classes": [
+    "Fluid Pound",
+    "Gas Interference",
+    "Normal",
+    "Rod Floating"
+  ],
+  "accuracy": 0.8
+}

@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.routers import wells, simulate, optimize
+from app.routers import wells, simulate, optimize, dynacards
 from app.services.data_service import load_data
 
 
@@ -36,3 +36,4 @@ app = FastAPI(
 app.include_router(wells.router, prefix="/api")
 app.include_router(simulate.router, prefix="/api")
 app.include_router(optimize.router, prefix="/api")
+app.include_router(dynacards.router, prefix="/api")

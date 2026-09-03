@@ -188,3 +188,83 @@ class OptimizeResponse(BaseModel):
     data_note: str = Field(
         default="Synthetic demonstration data — not real Oil India field data.",
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/wells/{well_id}/forecast models
+# ---------------------------------------------------------------------------
+
+
+class ForecastDay(BaseModel):
+    """A single day's forecast values."""
+
+    date: str
+    predicted_temperature_c: float
+    predicted_oil_bpd: float
+
+
+class ForecastResponse(BaseModel):
+    """Response from GET /api/wells/{well_id}/forecast."""
+
+    well_id: str
+    days: int
+    temperature_mae: float = Field(
+        ...,
+        description="Model's test-set MAE for temperature (°C) — for ±uncertainty display",
+    )
+    production_mae: float = Field(
+        ...,
+        description="Model's test-set MAE for production (bbl/day) — for ±uncertainty display",
+    )
+    forecast: list[ForecastDay]
+    data_note: str = Field(
+        default="Synthetic demonstration data — not real Oil India field data.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/dynacards/examples models
+# ---------------------------------------------------------------------------
+
+
+class ExampleCard(BaseModel):
+    """A single example dynacard for frontend plotting."""
+
+    card_id: str
+    well_id: str
+    position: list[float]
+    load: list[float]
+    condition_label: str
+    risk_level: str
+
+
+# ---------------------------------------------------------------------------
+# POST /api/dynacards/classify models
+# ---------------------------------------------------------------------------
+
+
+class DynacardClassifyRequest(BaseModel):
+    """Request body for classifying a dynamometer card."""
+
+    position: list[float] = Field(..., description="Position values (200-point array)")
+    load: list[float] = Field(..., description="Load values (200-point array)")
+    spm: float = Field(..., gt=0, description="Strokes per minute")
+    stroke_length: float = Field(..., gt=0, description="Stroke length (inches)")
+    temperature: float = Field(..., description="Temperature (°F)")
+    viscosity: float = Field(..., gt=0, description="Viscosity (cP)")
+    fluid_level: float = Field(..., ge=0, description="Fluid level (ft)")
+    pump_depth: float = Field(..., gt=0, description="Pump depth (ft)")
+    production_rate: float = Field(..., ge=0, description="Production rate (bbl/day)")
+
+
+class DynacardClassification(BaseModel):
+    """Response from POST /api/dynacards/classify."""
+
+    predicted_condition: str = Field(
+        ...,
+        description="Predicted condition: Normal, Rod Floating, Fluid Pound, or Gas Interference",
+    )
+    confidence: float = Field(..., ge=0, le=1, description="Classification confidence (0–1)")
+    top_features: list[str] = Field(..., description="Top 3 most important features for this prediction")
+    explanation: str = Field(..., description="Plain-language explanation of the condition")
+    recommended_action: str = Field(..., description="Suggested corrective action")

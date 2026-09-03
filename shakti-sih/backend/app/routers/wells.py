@@ -5,8 +5,9 @@ All data is synthetic demonstration data, not real Oil India field data.
 
 from fastapi import APIRouter, HTTPException
 
-from app.models import WellSummary, WellsResponse, DailyRecord, HistoryResponse
+from app.models import WellSummary, WellsResponse, DailyRecord, HistoryResponse, ForecastResponse
 from app.services.data_service import get_dataframe
+from app.services.forecast_service import forecast_7_days
 
 router = APIRouter(tags=["wells"])
 
@@ -116,3 +117,22 @@ def get_well_history(well_id: str, days: int = 90) -> HistoryResponse:
         days=days,
         records=records
     )
+
+
+@router.get("/wells/{well_id}/forecast", response_model=ForecastResponse)
+def get_well_forecast(well_id: str, days: int = 7) -> ForecastResponse:
+    """Get a 7-day (or N-day) forecast of reservoir temperature and oil production.
+
+    Uses two XGBoost regressors trained on the synthetic dataset.
+    Each day's prediction is fed forward recursively as lag input
+    for the next day.
+
+    All data is synthetic demonstration data.
+    """
+    # Validate well exists
+    df = get_dataframe()
+    if well_id not in df["well_id"].values:
+        raise HTTPException(status_code=404, detail="Well not found")
+
+    result = forecast_7_days(well_id, days)
+    return ForecastResponse(**result)

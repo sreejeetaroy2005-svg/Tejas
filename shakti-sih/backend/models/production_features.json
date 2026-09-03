@@ -1,0 +1,13 @@
+{
+  "feature_columns": [
+    "lag_1_reservoir_temperature_c",
+    "lag_1_viscosity_cp",
+    "lag_1_oil_bpd",
+    "context_days_since_injection",
+    "context_spm",
+    "context_vfd",
+    "context_css_stage_enc"
+  ],
+  "mae": 8.8067,
+  "r2": 0.9421
+}
