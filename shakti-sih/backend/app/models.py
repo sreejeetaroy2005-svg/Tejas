@@ -47,6 +47,34 @@ class WellsResponse(BaseModel):
     )
 
 
+class DailyRecord(BaseModel):
+    """Daily record of a well's parameters."""
+    date: str
+    css_stage: str
+    reservoir_temperature_c: float
+    viscosity_cp: float
+    oil_bpd: float
+    water_bpd: float
+    sor: float
+    energy_kwh: float
+    spm: float
+    vfd_frequency_hz: float
+    motor_current_a: float
+    estimated_fillage_pct: float
+    rod_floating_risk_score: float
+    rod_floating_risk_label: str
+
+
+class HistoryResponse(BaseModel):
+    """Historical data for a single well."""
+    well_id: str
+    days: int
+    records: list[DailyRecord]
+    data_note: str = Field(
+        default="Synthetic demonstration data — not real Oil India field data.",
+    )
+
+
 # ---------------------------------------------------------------------------
 # POST /api/simulate models
 # ---------------------------------------------------------------------------

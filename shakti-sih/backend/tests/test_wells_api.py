@@ -90,3 +90,44 @@ class TestListWells:
         """'total' field should match the length of the wells array."""
         data = client.get("/api/wells").json()
         assert data["total"] == len(data["wells"])
+
+
+class TestGetWell:
+    """Tests for GET /api/wells/{well_id}."""
+
+    def test_returns_200_for_existing(self):
+        response = client.get("/api/wells/BGW-01")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["well_id"] == "BGW-01"
+        assert "status" in data
+
+    def test_returns_404_for_missing(self):
+        response = client.get("/api/wells/NONEXISTENT-01")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Well not found"
+
+
+class TestGetWellHistory:
+    """Tests for GET /api/wells/{well_id}/history."""
+
+    def test_returns_200_for_existing(self):
+        response = client.get("/api/wells/BGW-01/history")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["well_id"] == "BGW-01"
+        assert "records" in data
+        assert isinstance(data["records"], list)
+        assert data["days"] == 90
+        assert len(data["records"]) <= 90
+
+    def test_custom_days_parameter(self):
+        response = client.get("/api/wells/BGW-01/history?days=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["days"] == 10
+        assert len(data["records"]) <= 10
+        
+    def test_returns_404_for_missing(self):
+        response = client.get("/api/wells/NONEXISTENT-01/history")
+        assert response.status_code == 404
