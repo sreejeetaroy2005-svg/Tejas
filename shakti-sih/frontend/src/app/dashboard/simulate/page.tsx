@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 const DEFAULTS = {
   spm: 8.8,
   vfd_frequency_hz: 45.3,
-  steam_volume_tonnes: 0,
+  steam_volume_tonnes: 180,
   soak_time_days: 4,
 };
 
@@ -198,7 +198,7 @@ export default function SimulatePage() {
               <SimSlider
                 label={<>Steam Volume<InfoTooltip text={TOOLTIPS.steamVolume} /></>}
                 value={overrides.steam_volume_tonnes}
-                min={0}
+                min={100}
                 max={260}
                 step={10}
                 unit="tonnes"
