@@ -47,8 +47,10 @@ function buildChartData(
   const recent = history.slice(-14);
   type ChartPoint = {
     date: string;
-    temperature: number;
-    oil: number;
+    temperatureActual: number | undefined;
+    temperatureForecast: number | undefined;
+    oilActual: number | undefined;
+    oilForecast: number | undefined;
     type: string;
     tempUpper: number | undefined;
     tempLower: number | undefined;
@@ -57,8 +59,10 @@ function buildChartData(
   };
   const combined: ChartPoint[] = recent.map((p) => ({
     date: p.date,
-    temperature: p.reservoir_temperature_c,
-    oil: p.oil_bpd,
+    temperatureActual: p.reservoir_temperature_c,
+    temperatureForecast: undefined,
+    oilActual: p.oil_bpd,
+    oilForecast: undefined,
     type: "actual",
     tempUpper: undefined,
     tempLower: undefined,
@@ -66,11 +70,31 @@ function buildChartData(
     oilLower: undefined,
   }));
 
+  // Duplicate the last actual point as the first forecast point so the two
+  // line series connect visually with no gap at the transition boundary.
+  if (recent.length > 0 && forecast.length > 0) {
+    const lastActual = recent[recent.length - 1];
+    combined.push({
+      date: lastActual.date,
+      temperatureActual: undefined,
+      temperatureForecast: lastActual.reservoir_temperature_c,
+      oilActual: undefined,
+      oilForecast: lastActual.oil_bpd,
+      type: "actual",
+      tempUpper: undefined,
+      tempLower: undefined,
+      oilUpper: undefined,
+      oilLower: undefined,
+    });
+  }
+
   forecast.forEach((f) => {
     combined.push({
       date: f.date,
-      temperature: f.predicted_temperature_c,
-      oil: f.predicted_oil_bpd,
+      temperatureActual: undefined,
+      temperatureForecast: f.predicted_temperature_c,
+      oilActual: undefined,
+      oilForecast: f.predicted_oil_bpd,
       type: "forecast",
       tempUpper: f.predicted_temperature_c + tempMae,
       tempLower: f.predicted_temperature_c - tempMae,
@@ -87,6 +111,10 @@ function CustomTooltip({ active, payload, label }: any) {
   const data = payload[0]?.payload;
   const isForecast = data?.type === "forecast";
 
+  // Collect the actual temp/oil values from whichever series has them
+  const tempValue = data?.temperatureActual ?? data?.temperatureForecast;
+  const oilValue = data?.oilActual ?? data?.oilForecast;
+
   return (
     <div
       style={{
@@ -100,21 +128,19 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="font-medium text-foreground mb-1">
         {label}
         {isForecast && (
-          <span className="ml-2 text-[10px] text-amber-400">forecast</span>
+          <span className="ml-2 text-[10px] text-cyan-400">forecast</span>
         )}
       </p>
-      {payload.map((entry: any, i: number) => {
-        if (entry.dataKey === "tempUpper" || entry.dataKey === "tempLower" ||
-            entry.dataKey === "oilUpper" || entry.dataKey === "oilLower") return null;
-        if (entry.value === undefined) return null;
-        const unit = entry.dataKey === "temperature" ? "°C" : "bbl/day";
-        return (
-          <p key={i} style={{ color: entry.color }} className="text-xs">
-            {entry.dataKey === "temperature" ? "🌡 Temp" : "🛢 Oil"}:{" "}
-            {typeof entry.value === "number" ? entry.value.toFixed(1) : entry.value} {unit}
-          </p>
-        );
-      })}
+      {tempValue != null && (
+        <p className="text-xs" style={{ color: "#f59e0b" }}>
+          🌡 Temp: {Number(tempValue).toFixed(1)} °C
+        </p>
+      )}
+      {oilValue != null && (
+        <p className="text-xs" style={{ color: isForecast ? "#22d3ee" : "#f59e0b" }}>
+          🛢 Oil: {Number(oilValue).toFixed(1)} bbl/day
+        </p>
+      )}
     </div>
   );
 }
@@ -201,13 +227,24 @@ export function ForecastChart({
                 fill="hsl(222, 47%, 11%)"
                 isAnimationActive={false}
               />
-              {/* Actual */}
+              {/* Actual — solid amber */}
               <Line
-                dataKey="temperature"
+                dataKey="temperatureActual"
                 stroke="#f59e0b"
                 strokeWidth={2}
                 dot={false}
                 connectNulls
+                legendType="none"
+              />
+              {/* Forecast — dashed cyan */}
+              <Line
+                dataKey="temperatureForecast"
+                stroke="#22d3ee"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                connectNulls
+                legendType="none"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -245,13 +282,24 @@ export function ForecastChart({
                 fill="hsl(222, 47%, 11%)"
                 isAnimationActive={false}
               />
-              {/* Actual */}
+              {/* Actual — solid amber */}
               <Line
-                dataKey="oil"
-                stroke="#22d3ee"
+                dataKey="oilActual"
+                stroke="#f59e0b"
                 strokeWidth={2}
                 dot={false}
                 connectNulls
+                legendType="none"
+              />
+              {/* Forecast — dashed cyan */}
+              <Line
+                dataKey="oilForecast"
+                stroke="#22d3ee"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                connectNulls
+                legendType="none"
               />
             </ComposedChart>
           </ResponsiveContainer>
