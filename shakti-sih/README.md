@@ -250,6 +250,43 @@ tejas/
 
 ---
 
+## Deployment
+
+### Frontend (Vercel)
+
+1. Push to GitHub (already done)
+2. Go to [vercel.com/new](https://vercel.com/new) → Import GitHub repo `sreejeetaroy2005-svg/Tejas`
+3. Set **Root Directory** to `shakti-sih/frontend`
+4. Framework preset: **Next.js**
+5. Deploy → you get a public URL
+6. To connect to a live backend, add env var `NEXT_PUBLIC_API_URL=https://your-backend-url/api` in Vercel project settings
+
+### Backend (Render)
+
+1. Create a free account at [render.com](https://render.com)
+2. New → Web Service → Connect your GitHub repo
+3. Set:
+   - **Root Directory:** `shakti-sih/backend`
+   - **Build Command:** `pip install -r requirements.txt && python scripts/train_forecast_model.py && python scripts/train_dynacard_classifier.py`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Add env var: `PYTHON_VERSION=3.12`
+5. Deploy → copy the URL and set it as `NEXT_PUBLIC_API_URL` in Vercel
+
+### Local Development
+
+```bash
+# Terminal 1 — Backend
+cd backend && pip install -r requirements.txt && python scripts/train_forecast_model.py && python scripts/train_dynacard_classifier.py && uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — Frontend
+cd frontend && npm install && npm run dev
+```
+
+Frontend at http://localhost:3000/dashboard, backend at http://localhost:8000/docs.
+The frontend automatically falls back to mock data if the backend is unreachable.
+
+---
+
 ## Data Disclaimer
 
 All data in this prototype is **synthetic** — generated from physics-based models, not real Oil India field data. The dynacard dataset contains 400 synthetic pump card shapes across 20 wells. Risk formulas and thresholds are simplified approximations for demonstration purposes.
