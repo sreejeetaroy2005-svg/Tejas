@@ -86,7 +86,7 @@ export function ClassifyPanel({ exampleCards = [] }: ClassifyPanelProps) {
       case "Rod Floating":
         return "text-red-400";
       case "Fluid Pound":
-        return "text-amber-400";
+        return "text-accent";
       case "Gas Interference":
         return "text-orange-400";
       default:

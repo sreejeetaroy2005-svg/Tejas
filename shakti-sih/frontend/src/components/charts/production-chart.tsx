@@ -75,23 +75,23 @@ export function ProductionChart({ data, loading }: ProductionChartProps) {
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={10}
               tickLine={false}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={10}
               tickLine={false}
               label={{
                 value: "bbl/day",
                 angle: -90,
                 position: "insideLeft",
-                style: { fill: "#64748b", fontSize: 10 },
+                style: { fill: "var(--muted-foreground)", fontSize: 10 },
               }}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -103,19 +103,19 @@ export function ProductionChart({ data, loading }: ProductionChartProps) {
             <Line
               type="monotone"
               dataKey="Oil Rate"
-              stroke="#f59e0b"
+              stroke="var(--accent)"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: "#f59e0b" }}
+              activeDot={{ r: 4, fill: "var(--accent)" }}
             />
             <Line
               type="monotone"
               dataKey="Water Rate"
-              stroke="#3b82f6"
+              stroke="var(--series-primary, #4f7ea8)"
               strokeWidth={1.5}
               dot={false}
               strokeDasharray="5 3"
-              activeDot={{ r: 3, fill: "#3b82f6" }}
+              activeDot={{ r: 3, fill: "var(--series-primary, #4f7ea8)" }}
             />
           </LineChart>
         </ResponsiveContainer>

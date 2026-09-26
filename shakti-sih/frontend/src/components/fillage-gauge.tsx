@@ -17,9 +17,9 @@ function getSeverity(pct: number): "safe" | "attention" | "danger" {
 }
 
 function getSeverityColor(severity: "safe" | "attention" | "danger") {
-  if (severity === "safe") return "#22c55e";
-  if (severity === "attention") return "#f59e0b";
-  return "#ef4444";
+  if (severity === "safe") return "var(--safe)";
+  if (severity === "attention") return "var(--accent)";
+  return "var(--danger)";
 }
 
 function getLabel(pct: number): string {
@@ -69,7 +69,7 @@ export function FillageGauge({ value, loading = false }: FillageGaugeProps) {
           <path
             d="M 10 80 A 70 70 0 0 1 170 80"
             fill="none"
-            stroke="#1e293b"
+            stroke="var(--border)"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />

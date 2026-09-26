@@ -38,10 +38,10 @@ import type { HistoryPoint, ExtendedWellSummary, DynacardExample } from "@/types
 
 // Condition → color mapping (consistent with dashboard theme)
 const CONDITION_COLORS: Record<string, string> = {
-  Normal: "#22c55e",
-  "Rod Floating": "#ef4444",
-  "Fluid Pound": "#f59e0b",
-  "Gas Interference": "#f97316",
+  Normal: "var(--safe)",
+  "Rod Floating": "var(--danger)",
+  "Fluid Pound": "var(--accent)",
+  "Gas Interference": "var(--series-primary, #4f7ea8)",
 };
 
 const CONDITION_RISK: Record<string, "safe" | "attention" | "danger"> = {

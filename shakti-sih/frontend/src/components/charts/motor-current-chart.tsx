@@ -98,20 +98,20 @@ export function MotorCurrentChart({ data, loading }: MotorCurrentChartProps) {
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <defs>
               <linearGradient id="motorGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={10}
               tickLine={false}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={10}
               tickLine={false}
               domain={[20, 55]}
@@ -119,42 +119,42 @@ export function MotorCurrentChart({ data, loading }: MotorCurrentChartProps) {
                 value: "Amperes",
                 angle: -90,
                 position: "insideLeft",
-                style: { fill: "#64748b", fontSize: 10 },
+                style: { fill: "var(--muted-foreground)", fontSize: 10 },
               }}
             />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
               yAxisId={0}
               y={HIGH_THRESHOLD}
-              stroke="#ef4444"
+              stroke="var(--danger)"
               strokeDasharray="6 3"
               strokeWidth={1.5}
               label={{
                 value: `${HIGH_THRESHOLD}A`,
                 position: "right",
-                style: { fill: "#ef4444", fontSize: 10 },
+                style: { fill: "var(--danger)", fontSize: 10 },
               }}
             />
             <ReferenceLine
               yAxisId={0}
               y={ATTENTION_THRESHOLD}
-              stroke="#f59e0b"
+              stroke="var(--accent)"
               strokeDasharray="4 4"
               strokeWidth={1}
               label={{
                 value: `${ATTENTION_THRESHOLD}A`,
                 position: "right",
-                style: { fill: "#f59e0b", fontSize: 10 },
+                style: { fill: "var(--accent)", fontSize: 10 },
               }}
             />
             <Area
               type="monotone"
               dataKey="current"
-              stroke="#f59e0b"
+              stroke="var(--accent)"
               strokeWidth={2}
               fill="url(#motorGradient)"
               dot={false}
-              activeDot={{ r: 4, fill: "#f59e0b" }}
+              activeDot={{ r: 4, fill: "var(--accent)" }}
             />
           </AreaChart>
         </ResponsiveContainer>

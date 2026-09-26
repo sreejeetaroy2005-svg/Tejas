@@ -24,6 +24,13 @@ const severityColors = {
   neutral: "text-foreground",
 };
 
+const severityBorderColors = {
+  safe: "bg-safe",
+  attention: "bg-attention",
+  danger: "bg-danger",
+  neutral: "bg-border",
+};
+
 export function KpiCard({
   title,
   value,
@@ -51,7 +58,8 @@ export function KpiCard({
   }
 
   return (
-    <Card className="bg-card">
+    <Card className="bg-card relative overflow-hidden">
+      <div className={cn("absolute top-0 left-0 right-0 h-[2px]", severityBorderColors[severity])} />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-muted-foreground" />
@@ -59,9 +67,9 @@ export function KpiCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className={cn("text-2xl font-bold", severityColors[severity])}>
+        <div className={cn("text-2xl font-bold font-mono", severityColors[severity])}>
           {typeof value === "number" ? value.toLocaleString() : value}
-          <span className="text-sm font-normal text-muted-foreground ml-1.5">
+          <span className="text-sm font-sans font-normal text-muted-foreground ml-1.5">
             {unit}
           </span>
         </div>

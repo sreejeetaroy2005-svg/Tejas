@@ -11,6 +11,7 @@ Oil India field data.
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import wells, simulate, optimize, dynacards
 from app.services.data_service import load_data
@@ -31,6 +32,15 @@ app = FastAPI(
     ),
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# Allow the Next.js frontend (any origin for dev/demo) to call this API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(wells.router, prefix="/api")

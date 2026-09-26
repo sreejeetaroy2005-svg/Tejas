@@ -504,7 +504,7 @@ function SimSlider({
             [&::-moz-range-thumb]:border-accent-foreground
             [&::-moz-range-thumb]:cursor-pointer"
           style={{
-            background: `linear-gradient(to right, #f59e0b ${pct}%, #1e293b ${pct}%)`,
+            background: `linear-gradient(to right, var(--accent) ${pct}%, var(--border) ${pct}%)`,
           }}
         />
       </div>

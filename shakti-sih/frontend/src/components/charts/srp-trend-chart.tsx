@@ -84,18 +84,18 @@ export function SrpTrendChart({ data, loading }: SrpTrendChartProps) {
       <CardContent>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={10}
               tickLine={false}
             />
             <YAxis
               yAxisId="spm"
               orientation="left"
-              stroke="#f59e0b"
+              stroke="var(--accent)"
               fontSize={10}
               tickLine={false}
               domain={[3, 11]}
@@ -103,13 +103,13 @@ export function SrpTrendChart({ data, loading }: SrpTrendChartProps) {
                 value: "SPM",
                 angle: -90,
                 position: "insideLeft",
-                style: { fill: "#f59e0b", fontSize: 10 },
+                style: { fill: "var(--accent)", fontSize: 10 },
               }}
             />
             <YAxis
               yAxisId="vfd"
               orientation="right"
-              stroke="#3b82f6"
+              stroke="var(--series-primary, #4f7ea8)"
               fontSize={10}
               tickLine={false}
               domain={[28, 52]}
@@ -117,7 +117,7 @@ export function SrpTrendChart({ data, loading }: SrpTrendChartProps) {
                 value: "Hz",
                 angle: 90,
                 position: "insideRight",
-                style: { fill: "#3b82f6", fontSize: 10 },
+                style: { fill: "var(--series-primary, #4f7ea8)", fontSize: 10 },
               }}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -130,20 +130,20 @@ export function SrpTrendChart({ data, loading }: SrpTrendChartProps) {
               yAxisId="spm"
               type="monotone"
               dataKey="SPM"
-              stroke="#f59e0b"
+              stroke="var(--accent)"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: "#f59e0b" }}
+              activeDot={{ r: 4, fill: "var(--accent)" }}
             />
             <Line
               yAxisId="vfd"
               type="monotone"
               dataKey="VFD"
-              stroke="#3b82f6"
+              stroke="var(--series-primary, #4f7ea8)"
               strokeWidth={1.5}
               dot={false}
               strokeDasharray="5 3"
-              activeDot={{ r: 3, fill: "#3b82f6" }}
+              activeDot={{ r: 3, fill: "var(--series-primary, #4f7ea8)" }}
             />
           </LineChart>
         </ResponsiveContainer>

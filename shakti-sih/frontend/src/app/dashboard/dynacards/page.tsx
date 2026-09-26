@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 
 const CONDITION_COLORS: Record<string, string> = {
-  Normal: "#22c55e",
-  "Rod Floating": "#ef4444",
-  "Fluid Pound": "#f59e0b",
-  "Gas Interference": "#f97316",
+  Normal: "var(--safe)",
+  "Rod Floating": "var(--danger)",
+  "Fluid Pound": "var(--attention)",
+  "Gas Interference": "var(--series-primary, #4f7ea8)",
 };
 
 const CONDITION_ICONS: Record<string, string> = {
@@ -86,7 +86,7 @@ export default function DynacardsPage() {
           </p>
         </div>
         {isMock && (
-          <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">
+          <Badge variant="outline" className="text-xs border-amber-500/30 text-accent">
             API Offline — Mock Data
           </Badge>
         )}
@@ -252,7 +252,7 @@ export default function DynacardsPage() {
           </div>
 
           <div className="flex items-start gap-2 bg-muted/30 rounded-md px-3 py-2 mt-2">
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
             <p className="text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground">Note:</span> This
               classifier is trained on synthetic demonstration data — not real Oil

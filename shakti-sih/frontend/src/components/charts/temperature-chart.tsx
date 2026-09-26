@@ -88,31 +88,31 @@ export function TemperatureChart({ data, loading }: TemperatureChartProps) {
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={chartData} margin={{ top: 5, right: 40, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={10}
               tickLine={false}
             />
             <YAxis
               yAxisId="temp"
               orientation="left"
-              stroke="#ef4444"
+              stroke="var(--danger)"
               fontSize={10}
               tickLine={false}
               label={{
                 value: "°C",
                 angle: -90,
                 position: "insideLeft",
-                style: { fill: "#ef4444", fontSize: 10 },
+                style: { fill: "var(--danger)", fontSize: 10 },
               }}
             />
             <YAxis
               yAxisId="visc"
               orientation="right"
-              stroke="#a855f7"
+              stroke="var(--series-secondary, #8a76a8)"
               fontSize={10}
               tickLine={false}
               tickFormatter={formatViscosity}
@@ -120,7 +120,7 @@ export function TemperatureChart({ data, loading }: TemperatureChartProps) {
                 value: "cP",
                 angle: 90,
                 position: "insideRight",
-                style: { fill: "#a855f7", fontSize: 10 },
+                style: { fill: "var(--series-secondary, #8a76a8)", fontSize: 10 },
               }}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -133,20 +133,20 @@ export function TemperatureChart({ data, loading }: TemperatureChartProps) {
               yAxisId="temp"
               type="monotone"
               dataKey="Temperature"
-              stroke="#ef4444"
+              stroke="var(--danger)"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: "#ef4444" }}
+              activeDot={{ r: 4, fill: "var(--danger)" }}
             />
             <Line
               yAxisId="visc"
               type="monotone"
               dataKey="Viscosity"
-              stroke="#a855f7"
+              stroke="var(--series-secondary, #8a76a8)"
               strokeWidth={1.5}
               dot={false}
               strokeDasharray="5 3"
-              activeDot={{ r: 3, fill: "#a855f7" }}
+              activeDot={{ r: 3, fill: "var(--series-secondary, #8a76a8)" }}
             />
           </LineChart>
         </ResponsiveContainer>

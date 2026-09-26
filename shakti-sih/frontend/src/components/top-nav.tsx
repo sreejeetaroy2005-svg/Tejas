@@ -48,10 +48,10 @@ export function TopNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  "flex items-center gap-1.5 px-3 py-4 text-xs font-medium transition-colors border-b-2",
                   isActive
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                    ? "border-accent text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />

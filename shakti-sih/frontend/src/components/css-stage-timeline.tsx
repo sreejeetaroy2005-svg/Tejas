@@ -11,17 +11,17 @@ interface CssStageTimelineProps {
 
 const STAGE_CONFIG: Record<string, { color: string; label: string; bgClass: string }> = {
   injection: {
-    color: "#3b82f6",
+    color: "var(--series-primary, #4f7ea8)",
     label: "Injection",
     bgClass: "bg-blue-500",
   },
   soak: {
-    color: "#a855f7",
+    color: "var(--series-secondary, #8a76a8)",
     label: "Soak",
     bgClass: "bg-purple-500",
   },
   production: {
-    color: "#f59e0b",
+    color: "var(--accent)",
     label: "Production",
     bgClass: "bg-amber-500",
   },
@@ -100,7 +100,7 @@ export function CssStageTimeline({ data, loading }: CssStageTimelineProps) {
         <div className="flex h-8 rounded-lg overflow-hidden border border-border">
           {blocks.map((block, i) => {
             const config = STAGE_CONFIG[block.stage] ?? {
-              color: "#64748b",
+              color: "var(--muted-foreground)",
               label: block.stage,
               bgClass: "bg-gray-500",
             };
@@ -155,7 +155,7 @@ export function CssStageTimeline({ data, loading }: CssStageTimelineProps) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {blocks.map((block, i) => {
             const config = STAGE_CONFIG[block.stage] ?? {
-              color: "#64748b",
+              color: "var(--muted-foreground)",
               label: block.stage,
             };
             return (

@@ -118,8 +118,8 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div
       style={{
-        backgroundColor: "hsl(222, 47%, 11%)",
-        border: "1px solid hsl(217, 33%, 17%)",
+        backgroundColor: "var(--card)",
+        border: "1px solid var(--border)",
         borderRadius: 8,
         padding: "10px 14px",
         fontSize: 12,
@@ -128,16 +128,16 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="font-medium text-foreground mb-1">
         {label}
         {isForecast && (
-          <span className="ml-2 text-[10px] text-cyan-400">forecast</span>
+          <span className="ml-2 text-[10px] text-[var(--series-uncertainty,#6fb3c9)]">forecast</span>
         )}
       </p>
       {tempValue != null && (
-        <p className="text-xs" style={{ color: "#f59e0b" }}>
+        <p className="text-xs" style={{ color: "var(--accent)" }}>
           🌡 Temp: {Number(tempValue).toFixed(1)} °C
         </p>
       )}
       {oilValue != null && (
-        <p className="text-xs" style={{ color: isForecast ? "#22d3ee" : "#f59e0b" }}>
+        <p className="text-xs" style={{ color: isForecast ? "var(--series-uncertainty, #6fb3c9)" : "var(--accent)" }}>
           🛢 Oil: {Number(oilValue).toFixed(1)} bbl/day
         </p>
       )}
@@ -175,7 +175,7 @@ export function ForecastChart({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-amber-400" />
+            <Brain className="h-4 w-4 text-accent" />
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               7-Day Forecast
               <InfoTooltip text="XGBoost model predicts reservoir temperature and oil production for the next 7 days. Shaded bands show model uncertainty (±MAE)." />
@@ -183,13 +183,13 @@ export function ForecastChart({
           </div>
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-amber-400 inline-block" /> Actual
+              <span className="w-3 h-0.5 bg-accent inline-block" /> Actual
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-cyan-400 inline-block border-dashed" style={{ borderTop: "2px dashed #22d3ee", height: 0 }} /> Forecast
+              <span className="w-3 h-0.5 bg-[var(--series-uncertainty,#6fb3c9)] inline-block border-dashed" style={{ borderTop: "2px dashed var(--series-uncertainty, #6fb3c9)", height: 0 }} /> Forecast
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-2 bg-amber-400/20 inline-block rounded" /> ±MAE
+              <span className="w-3 h-2 bg-accent/20 inline-block rounded" /> ±MAE
             </span>
           </div>
         </div>
@@ -202,7 +202,7 @@ export function ForecastChart({
           </p>
           <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
                 dataKey="date"
                 tick={{ fontSize: 10, fill: "hsl(215, 20%, 55%)" }}
@@ -218,19 +218,19 @@ export function ForecastChart({
               <Area
                 dataKey="tempUpper"
                 stroke="none"
-                fill="rgba(251, 191, 36, 0.12)"
+                fill="var(--accent)" fillOpacity={0.12}
                 isAnimationActive={false}
               />
               <Area
                 dataKey="tempLower"
                 stroke="none"
-                fill="hsl(222, 47%, 11%)"
+                fill="var(--card)"
                 isAnimationActive={false}
               />
               {/* Actual — solid amber */}
               <Line
                 dataKey="temperatureActual"
-                stroke="#f59e0b"
+                stroke="var(--accent)"
                 strokeWidth={2}
                 dot={false}
                 connectNulls
@@ -239,7 +239,7 @@ export function ForecastChart({
               {/* Forecast — dashed cyan */}
               <Line
                 dataKey="temperatureForecast"
-                stroke="#22d3ee"
+                stroke="var(--series-uncertainty, #6fb3c9)"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
@@ -257,7 +257,7 @@ export function ForecastChart({
           </p>
           <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
                 dataKey="date"
                 tick={{ fontSize: 10, fill: "hsl(215, 20%, 55%)" }}
@@ -273,19 +273,19 @@ export function ForecastChart({
               <Area
                 dataKey="oilUpper"
                 stroke="none"
-                fill="rgba(34, 211, 238, 0.12)"
+                fill="var(--series-uncertainty, #6fb3c9)" fillOpacity={0.12}
                 isAnimationActive={false}
               />
               <Area
                 dataKey="oilLower"
                 stroke="none"
-                fill="hsl(222, 47%, 11%)"
+                fill="var(--card)"
                 isAnimationActive={false}
               />
               {/* Actual — solid amber */}
               <Line
                 dataKey="oilActual"
-                stroke="#f59e0b"
+                stroke="var(--accent)"
                 strokeWidth={2}
                 dot={false}
                 connectNulls
@@ -294,7 +294,7 @@ export function ForecastChart({
               {/* Forecast — dashed cyan */}
               <Line
                 dataKey="oilForecast"
-                stroke="#22d3ee"
+                stroke="var(--series-uncertainty, #6fb3c9)"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
