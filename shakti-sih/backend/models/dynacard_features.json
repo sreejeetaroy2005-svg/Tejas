@@ -6,8 +6,6 @@
     "mean_load",
     "std_load",
     "enclosed_area",
-    "pickup_delay_frac",
-    "corner_radius_frac",
     "load_pickup_pos",
     "hull_fill_ratio",
     "top_curvature",
@@ -25,87 +23,83 @@
     "Normal",
     "Rod Floating"
   ],
-  "cv_accuracy_mean": 1.0,
-  "cv_accuracy_std": 0.0,
-  "cv_macro_f1_mean": 1.0,
-  "cv_macro_f1_std": 0.0,
-  "cv_gi_precision_mean": 1.0,
-  "cv_gi_recall_mean": 1.0,
-  "cv_gi_f1_mean": 1.0,
+  "cv_accuracy_mean": 0.8325,
+  "cv_accuracy_std": 0.0294,
+  "cv_macro_f1_mean": 0.8309,
+  "cv_macro_f1_std": 0.0312,
+  "cv_gi_precision_mean": 0.8886,
+  "cv_gi_recall_mean": 0.9,
+  "cv_gi_f1_mean": 0.8935,
   "gi_severity_breakdown": {
     "Low": {
-      "n": 48,
-      "severity_range": [
-        0.151,
-        0.264
-      ],
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
-      "correct": 48
-    },
-    "Mid": {
       "n": 56,
       "severity_range": [
-        0.27,
+        0.101,
+        0.265
+      ],
+      "precision": 1.0,
+      "recall": 0.6964,
+      "f1": 0.8211,
+      "correct": 39
+    },
+    "Mid": {
+      "n": 42,
+      "severity_range": [
+        0.267,
         0.382
       ],
       "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
-      "correct": 56
+      "recall": 0.9286,
+      "f1": 0.963,
+      "correct": 39
     },
     "High": {
-      "n": 96,
+      "n": 102,
       "severity_range": [
-        0.383,
-        0.55
+        0.386,
+        0.699
       ],
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "correct": 96
+      "correct": 102
     }
   },
   "feature_importances": {
-    "max_load": 0.004171,
-    "min_load": 0.097819,
-    "load_range": 0.026885,
-    "mean_load": 0.023286,
-    "std_load": 0.019588,
-    "enclosed_area": 0.18419,
-    "pickup_delay_frac": 0.112838,
-    "corner_radius_frac": 0.094193,
-    "load_pickup_pos": 0.180724,
-    "hull_fill_ratio": 0.217038,
-    "top_curvature": 0.02744,
-    "SPM": 0.00151,
-    "stroke_length": 0.00185,
-    "temperature": 0.001693,
-    "viscosity": 0.001568,
-    "fluid_level": 0.001389,
-    "pump_depth": 0.002228,
-    "production_rate": 0.001591
+    "max_load": 0.024382,
+    "min_load": 0.056445,
+    "load_range": 0.03247,
+    "mean_load": 0.026713,
+    "std_load": 0.032718,
+    "enclosed_area": 0.163273,
+    "load_pickup_pos": 0.267705,
+    "hull_fill_ratio": 0.130424,
+    "top_curvature": 0.155889,
+    "SPM": 0.015597,
+    "stroke_length": 0.015163,
+    "temperature": 0.015281,
+    "viscosity": 0.015314,
+    "fluid_level": 0.016631,
+    "pump_depth": 0.016023,
+    "production_rate": 0.01597
   },
   "top_features_ranked": [
-    "hull_fill_ratio",
-    "enclosed_area",
     "load_pickup_pos",
-    "pickup_delay_frac",
-    "min_load",
-    "corner_radius_frac",
+    "enclosed_area",
     "top_curvature",
+    "hull_fill_ratio",
+    "min_load",
+    "std_load",
     "load_range",
     "mean_load",
-    "std_load",
     "max_load",
+    "fluid_level",
     "pump_depth",
-    "stroke_length",
-    "temperature",
     "production_rate",
-    "viscosity",
     "SPM",
-    "fluid_level"
+    "viscosity",
+    "temperature",
+    "stroke_length"
   ],
-  "accuracy": 1.0
+  "accuracy": 0.8325
 }

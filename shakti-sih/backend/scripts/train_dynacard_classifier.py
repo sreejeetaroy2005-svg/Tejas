@@ -2,23 +2,37 @@
 
 Classifies pump cards into: Normal, Rod Floating, Fluid Pound, Gas Interference.
 
-Changes vs v1
--------------
-* Feature set expanded from 13 → 18:
-    - pickup_delay_frac   (from CSV, encodes GI delayed pickup directly)
-    - corner_radius_frac  (from CSV, encodes GI rounded corners directly)
-    - load_pickup_pos     (computed: position fraction where load first exceeds
-                          50% of max_load on the upstroke)
-    - hull_fill_ratio     (computed: card enclosed area / convex-hull area;
-                          rounded GI cards fill less of their hull than Normal)
-    - top_curvature       (computed: RMS of load second-derivative near the
-                          top portion of the card — high for sharp corners,
-                          low for rounded ones)
-* 5-fold stratified cross-validation replaces the single 80/20 split.
-* Macro-F1 reported as headline metric alongside accuracy.
-* Severity-stratified breakdown for Gas Interference (low/mid/high tercile).
-* Full metadata (CV scores, severity breakdown, feature importances) written
-  into models/dynacard_features.json.
+Feature set (16 features)
+-------------------------
+6 geometric (from the load array):
+    max_load, min_load, load_range, mean_load, std_load, enclosed_area
+
+3 computed shape features (derived from position/load arrays at both
+training and inference time — no dependency on generator-internal columns):
+    load_pickup_pos  — stroke fraction where upstroke load first exceeds
+                       50% of its peak; captures GI pickup delay
+    hull_fill_ratio  — card enclosed area / convex-hull area; rounded GI
+                       cards fill less of their hull than Normal
+    top_curvature    — RMS second-derivative near the top 20% of load;
+                       sharp corners score high, rounded corners score low
+
+7 operating parameters:
+    SPM, stroke_length, temperature, viscosity, fluid_level,
+    pump_depth, production_rate
+
+NOTE: pickup_delay_frac and corner_radius_frac are generator-internal
+parameters stored as diagnostic CSV columns. They are NEVER included in
+FEATURE_COLS because they are zeroed out in the production inference path
+(classify_card() computes all features from raw position/load arrays and
+has no access to those CSV values).  Including them would constitute target
+leakage that inflates CV scores without improving production accuracy.
+
+Evaluation
+----------
+* 5-fold stratified cross-validation (not a single 80/20 split).
+* Macro-F1 as headline metric alongside accuracy.
+* Severity-stratified Gas Interference breakdown (low/mid/high tercile).
+* Full metadata saved to models/dynacard_features.json.
 
 Usage:
     cd backend
@@ -58,15 +72,14 @@ MODEL_DIR = os.path.join(SCRIPT_DIR, "..", "models")
 # ---------------------------------------------------------------------------
 
 # Column names — keep in sync with dynacard_service.py
+# IMPORTANT: pickup_delay_frac and corner_radius_frac are NOT here.
+# They are generator-internal diagnostic columns, zero at inference time → leakage.
 GEOMETRIC_FEATURES = [
     "max_load", "min_load", "load_range", "mean_load", "std_load", "enclosed_area",
 ]
 SHAPE_FEATURES = [
-    # Direct shape parameters from generator (zero for non-GI cards)
-    "pickup_delay_frac",
-    "corner_radius_frac",
-    # Computed shape features that can also be derived at inference time from
-    # the raw position/load arrays (no dependency on CSV columns):
+    # All three are computed from position/load arrays identically in both
+    # this script and dynacard_service.py — safe to use as model features.
     "load_pickup_pos",   # fraction of upstroke where load exceeds 50% of max
     "hull_fill_ratio",   # enclosed_area / convex_hull_area (1.0 = sharp card)
     "top_curvature",     # RMS second-derivative near top of card
@@ -145,7 +158,7 @@ def _top_curvature(load: np.ndarray) -> float:
 # ---------------------------------------------------------------------------
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Engineer all 18 features per dynacard row."""
+    """Engineer all 16 features per dynacard row."""
     df = df.copy()
 
     # Parse position/load arrays
@@ -163,17 +176,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         axis=1,
     )
 
-    # --- shape features: pickup_delay_frac, corner_radius_frac ---
-    # If already present as CSV columns (generated data), use them directly.
-    # If not (e.g. old CSV without shape columns), fall back to 0.
-    if "pickup_delay_frac" not in df.columns:
-        df["pickup_delay_frac"] = 0.0
-    if "corner_radius_frac" not in df.columns:
-        df["corner_radius_frac"] = 0.0
-    df["pickup_delay_frac"] = df["pickup_delay_frac"].fillna(0.0).astype(float)
-    df["corner_radius_frac"] = df["corner_radius_frac"].fillna(0.0).astype(float)
-
-    # --- computed shape features ---
+    # --- 3 computed shape features (curve-derived, safe at inference time) ---
     def _lpp(row):
         return _load_pickup_pos(
             np.array(row["position_parsed"]), np.array(row["load_parsed"])
@@ -224,7 +227,7 @@ def main() -> None:
     # -------------------------------------------------------- feature engineering
     print("Engineering features …")
     df = engineer_features(df)
-    print(f"Feature set ({len(FEATURE_COLS)} features): {FEATURE_COLS}\n")
+    print(f"Feature set ({len(FEATURE_COLS)} features — no leaked generator columns): {FEATURE_COLS}\n")
 
     X = df[FEATURE_COLS].to_numpy(dtype=float)
     y = df[TARGET_COL].to_numpy(dtype=str)

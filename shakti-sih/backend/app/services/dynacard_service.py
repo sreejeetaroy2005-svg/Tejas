@@ -175,43 +175,44 @@ def _build_feature_vector(
     fluid_level: float,
     pump_depth: float,
     production_rate: float,
-    # Shape parameters: caller supplies these when known (e.g. from the CSV).
-    # At live-inference time they are computed from the position/load arrays.
-    pickup_delay_frac: float | None = None,
-    corner_radius_frac: float | None = None,
 ) -> np.ndarray:
-    """Build a feature vector from card data + operating params.
+    """Build a 16-feature vector from card data + operating params.
 
-    The vector order must exactly match FEATURE_COLS in the training script.
+    Feature order exactly matches FEATURE_COLS in train_dynacard_classifier.py:
+        6 geometric + 3 computed shape + 7 operating parameters.
+
+    pickup_delay_frac and corner_radius_frac are intentionally excluded —
+    they are generator-internal diagnostic columns that are unavailable (and
+    were always 0.0 by default) at production inference time.  Including them
+    constitutes target leakage.
     """
     pos_arr  = np.array(position)
     load_arr = np.array(load)
 
     geom = _compute_geometric_features(position, load)
+    lpp  = _load_pickup_pos(pos_arr, load_arr)
+    hfr  = _hull_fill_ratio(pos_arr, load_arr)
+    tc   = _top_curvature(load_arr)
 
-    # Shape features — at inference time we derive from the curve
-    pdf = pickup_delay_frac  if pickup_delay_frac  is not None else 0.0
-    crf = corner_radius_frac if corner_radius_frac is not None else 0.0
-    lpp = _load_pickup_pos(pos_arr, load_arr)
-    hfr = _hull_fill_ratio(pos_arr, load_arr)
-    tc  = _top_curvature(load_arr)
-
+    # Build in the exact same order as FEATURE_COLS:
+    # GEOMETRIC_FEATURES + SHAPE_FEATURES + OPERATING_FEATURES
     feature_dict = {
-        **geom,
-        "pickup_delay_frac":  pdf,
-        "corner_radius_frac": crf,
-        "load_pickup_pos":    lpp,
-        "hull_fill_ratio":    hfr,
-        "top_curvature":      tc,
-        "SPM":             spm,
-        "stroke_length":   stroke_length,
-        "temperature":     temperature,
-        "viscosity":       viscosity,
-        "fluid_level":     fluid_level,
-        "pump_depth":      pump_depth,
-        "production_rate": production_rate,
+        **geom,                      # max_load, min_load, load_range, mean_load, std_load, enclosed_area
+        "load_pickup_pos":  lpp,     # shape
+        "hull_fill_ratio":  hfr,     # shape
+        "top_curvature":    tc,      # shape
+        "SPM":              spm,
+        "stroke_length":    stroke_length,
+        "temperature":      temperature,
+        "viscosity":        viscosity,
+        "fluid_level":      fluid_level,
+        "pump_depth":       pump_depth,
+        "production_rate":  production_rate,
     }
 
+    # _feature_cols is loaded from dynacard_features.json — it IS FEATURE_COLS.
+    # Using it to index ensures this function stays in sync with the training
+    # script even if the order changes in a future revision.
     return np.array([[feature_dict[col] for col in _feature_cols]], dtype=float)
 
 
