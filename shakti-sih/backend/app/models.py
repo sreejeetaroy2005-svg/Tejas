@@ -262,9 +262,22 @@ class DynacardClassification(BaseModel):
 
     predicted_condition: str = Field(
         ...,
-        description="Predicted condition: Normal, Rod Floating, Fluid Pound, or Gas Interference",
+        description=(
+            "Predicted condition: Normal, Rod Floating, Fluid Pound, Gas Interference, "
+            "or 'Gas Interference (low confidence)' when the model's GI probability is "
+            "below the confidence threshold."
+        ),
     )
     confidence: float = Field(..., ge=0, le=1, description="Classification confidence (0–1)")
+    gi_probability: float = Field(
+        default=0.0,
+        ge=0,
+        le=1,
+        description=(
+            "Raw predicted probability for Gas Interference class (0–1). "
+            "Useful for dashboards even when the top prediction is a different class."
+        ),
+    )
     top_features: list[str] = Field(..., description="Top 3 most important features for this prediction")
     explanation: str = Field(..., description="Plain-language explanation of the condition")
     recommended_action: str = Field(..., description="Suggested corrective action")

@@ -95,7 +95,15 @@ class TestDynacardClassify:
 
     def test_predicted_condition_valid(self):
         data = client.post("/api/dynacards/classify", json=_CLASSIFY_BODY).json()
-        valid = {"Normal", "Rod Floating", "Fluid Pound", "Gas Interference"}
+        # "Gas Interference (low confidence)" is also a valid response when the
+        # model's GI probability is below the confidence threshold.
+        valid = {
+            "Normal",
+            "Rod Floating",
+            "Fluid Pound",
+            "Gas Interference",
+            "Gas Interference (low confidence)",
+        }
         assert data["predicted_condition"] in valid
 
     def test_confidence_in_range(self):

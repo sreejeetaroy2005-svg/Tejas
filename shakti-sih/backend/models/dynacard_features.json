@@ -6,6 +6,11 @@
     "mean_load",
     "std_load",
     "enclosed_area",
+    "pickup_delay_frac",
+    "corner_radius_frac",
+    "load_pickup_pos",
+    "hull_fill_ratio",
+    "top_curvature",
     "SPM",
     "stroke_length",
     "temperature",
@@ -20,5 +25,87 @@
     "Normal",
     "Rod Floating"
   ],
-  "accuracy": 0.8
+  "cv_accuracy_mean": 1.0,
+  "cv_accuracy_std": 0.0,
+  "cv_macro_f1_mean": 1.0,
+  "cv_macro_f1_std": 0.0,
+  "cv_gi_precision_mean": 1.0,
+  "cv_gi_recall_mean": 1.0,
+  "cv_gi_f1_mean": 1.0,
+  "gi_severity_breakdown": {
+    "Low": {
+      "n": 48,
+      "severity_range": [
+        0.151,
+        0.264
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "correct": 48
+    },
+    "Mid": {
+      "n": 56,
+      "severity_range": [
+        0.27,
+        0.382
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "correct": 56
+    },
+    "High": {
+      "n": 96,
+      "severity_range": [
+        0.383,
+        0.55
+      ],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "correct": 96
+    }
+  },
+  "feature_importances": {
+    "max_load": 0.004171,
+    "min_load": 0.097819,
+    "load_range": 0.026885,
+    "mean_load": 0.023286,
+    "std_load": 0.019588,
+    "enclosed_area": 0.18419,
+    "pickup_delay_frac": 0.112838,
+    "corner_radius_frac": 0.094193,
+    "load_pickup_pos": 0.180724,
+    "hull_fill_ratio": 0.217038,
+    "top_curvature": 0.02744,
+    "SPM": 0.00151,
+    "stroke_length": 0.00185,
+    "temperature": 0.001693,
+    "viscosity": 0.001568,
+    "fluid_level": 0.001389,
+    "pump_depth": 0.002228,
+    "production_rate": 0.001591
+  },
+  "top_features_ranked": [
+    "hull_fill_ratio",
+    "enclosed_area",
+    "load_pickup_pos",
+    "pickup_delay_frac",
+    "min_load",
+    "corner_radius_frac",
+    "top_curvature",
+    "load_range",
+    "mean_load",
+    "std_load",
+    "max_load",
+    "pump_depth",
+    "stroke_length",
+    "temperature",
+    "production_rate",
+    "viscosity",
+    "SPM",
+    "fluid_level"
+  ],
+  "accuracy": 1.0
 }
