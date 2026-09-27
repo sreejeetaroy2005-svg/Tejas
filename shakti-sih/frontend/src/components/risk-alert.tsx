@@ -13,6 +13,10 @@ interface RiskAlertProps {
   riskLabel: string;
   riskFactors: Record<string, number>;
   loading?: boolean;
+  mlCondition?: string;
+  mlConfidence?: number;
+  diagnosisSource?: string;
+  mlMatchNote?: string;
 }
 
 const FACTOR_LABELS: Record<string, string> = {
@@ -30,8 +34,8 @@ const FACTOR_TOOLTIPS: Record<string, string> = {
 };
 
 function riskColor(label: string) {
-  if (label === "Low") return "safe";
-  if (label === "Medium") return "attention";
+  if (label === "Low" || label === "Normal") return "safe";
+  if (label === "Medium" || label === "Fluid Pound" || label === "Gas Interference" || label === "Gas Interference (low confidence)") return "attention";
   return "danger";
 }
 
@@ -54,6 +58,10 @@ export function RiskAlert({
   riskLabel,
   riskFactors,
   loading = false,
+  mlCondition,
+  mlConfidence,
+  diagnosisSource,
+  mlMatchNote,
 }: RiskAlertProps) {
   if (loading) {
     return (
@@ -74,8 +82,10 @@ export function RiskAlert({
     );
   }
 
-  const color = riskColor(riskLabel);
-  const Icon = riskLabel === "Low" ? ShieldCheck : AlertTriangle;
+  const hasMl = diagnosisSource === "ml_classifier" && mlCondition;
+  const primaryLabel = hasMl ? mlCondition : riskLabel;
+  const color = riskColor(primaryLabel);
+  const Icon = (primaryLabel === "Low" || primaryLabel === "Normal") ? ShieldCheck : AlertTriangle;
   const sortedFactors = Object.entries(riskFactors).sort(
     (a, b) => b[1] - a[1],
   );
@@ -92,10 +102,15 @@ export function RiskAlert({
               color === "danger" && "text-danger",
             )}
           />
-          Risk Assessment
+          {hasMl ? "ML Diagnosis" : "Risk Assessment"}
           <Badge variant={color as "safe" | "attention" | "danger"}>
-            {riskLabel}
+            {primaryLabel}
           </Badge>
+          {hasMl && (
+            <Badge variant="secondary" className="ml-1 text-[10px] uppercase">
+              ML
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -138,10 +153,21 @@ export function RiskAlert({
         </div>
 
         {/* Info note */}
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Weights: fillage 35%, viscosity 30%, excess SPM 20%, motor current
-          15%. Thresholds: Low ≤ 35, Medium 36–65, High &gt; 65.
-        </p>
+        <div className="space-y-1.5 pt-2 border-t border-border">
+          {hasMl && (
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <span className="font-medium text-foreground">Source: ML Classifier</span> — 
+              {' '}Condition detected from nearest-neighbour dynacard match ({mlConfidence ? `${(mlConfidence * 100).toFixed(0)}% confidence` : 'matched'})
+              {mlMatchNote && (
+                <span className="block mt-0.5 opacity-80 text-[10px]">{mlMatchNote}</span>
+              )}
+            </p>
+          )}
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">Rule-based proxy score: {riskScore.toFixed(1)}/100 ({riskLabel})</span>. 
+            Weights: fillage 35%, viscosity 30%, excess SPM 20%, motor current 15%.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

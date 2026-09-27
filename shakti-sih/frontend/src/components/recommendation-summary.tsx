@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb, ArrowRight, Loader2 } from "lucide-react";
+import { Lightbulb, ArrowRight, Loader2, AlertTriangle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,12 +116,60 @@ export function RecommendationSummary({
           </div>
         </div>
 
+        {/* Cycle Recommendation */}
+        {data.cycle_recommendation && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border">
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                Injection Pressure
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm font-mono font-bold text-safe">
+                  {data.cycle_recommendation.injection_pressure_psi.toFixed(1)} psi
+                </span>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                Soak Time
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm font-mono font-bold text-safe">
+                  {data.cycle_recommendation.soak_time_days} days
+                </span>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                Cutoff Trigger
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs font-mono font-bold text-attention">
+                  {data.cycle_recommendation.cutoff_trigger}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Explanation */}
         <div className="rounded-lg bg-muted/50 p-3">
           <p className="text-sm text-foreground leading-relaxed">
             {data.explanation}
           </p>
         </div>
+
+        {data.ml_diagnosis_warning && (
+          <div className="border border-attention/50 bg-attention/10 text-attention-foreground rounded-md p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="h-4 w-4" />
+              <h5 className="font-semibold text-[13px]">ML Diagnosis Mismatch</h5>
+            </div>
+            <p className="text-xs leading-relaxed opacity-90 pl-6">
+              {data.ml_diagnosis_warning}
+            </p>
+          </div>
+        )}
 
         <p className="text-[11px] text-muted-foreground">
           {data.data_note}

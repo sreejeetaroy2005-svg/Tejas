@@ -91,6 +91,19 @@ class TestListWells:
         data = client.get("/api/wells").json()
         assert data["total"] == len(data["wells"])
 
+    def test_ml_fields_present(self):
+        """Each well should now carry ML diagnosis fields."""
+        data = client.get("/api/wells").json()
+        for well in data["wells"]:
+            assert "diagnosis_source" in well, "diagnosis_source missing"
+            # diagnosis_source must be one of the two known values
+            assert well["diagnosis_source"] in (
+                "ml_classifier", "rule_based_projection"
+            )
+            # ml_condition is present when diagnosis is from the classifier
+            if well["diagnosis_source"] == "ml_classifier":
+                assert well.get("ml_condition") is not None
+
 
 class TestGetWell:
     """Tests for GET /api/wells/{well_id}."""
@@ -101,6 +114,12 @@ class TestGetWell:
         data = response.json()
         assert data["well_id"] == "BGW-01"
         assert "status" in data
+
+    def test_ml_fields_present(self):
+        """Single-well endpoint should carry ML diagnosis fields."""
+        data = client.get("/api/wells/BGW-01").json()
+        assert "diagnosis_source" in data
+        assert data["diagnosis_source"] in ("ml_classifier", "rule_based_projection")
 
     def test_returns_404_for_missing(self):
         response = client.get("/api/wells/NONEXISTENT-01")

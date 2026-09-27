@@ -62,6 +62,10 @@ export default function DashboardPage() {
           motor_current_a: mockExtendedWell.motor_current_a,
           estimated_fillage_pct: mockExtendedWell.estimated_fillage_pct,
           risk_factors: mockExtendedWell.risk_factors,
+          ml_condition: base.ml_condition,
+          ml_confidence: base.ml_confidence,
+          diagnosis_source: base.diagnosis_source,
+          ml_match_note: base.ml_match_note,
         });
       }
       setApiDown(false);
@@ -182,7 +186,11 @@ export default function DashboardPage() {
             icon={ShieldAlert}
             loading={loading}
             severity={riskSeverity(well.risk_label)}
-            subtitle={`Label: ${well.risk_label}`}
+            subtitle={
+              well.diagnosis_source === "ml_classifier" && well.ml_condition
+                ? `ML: ${well.ml_condition}`
+                : `Label: ${well.risk_label}`
+            }
           />
           <KpiCard
             title={<>Motor Current<InfoTooltip text={TOOLTIPS.motorCurrent} /></>}
@@ -208,6 +216,10 @@ export default function DashboardPage() {
             riskLabel={well.risk_label}
             riskFactors={well.risk_factors}
             loading={loading}
+            mlCondition={well.ml_condition}
+            mlConfidence={well.ml_confidence}
+            diagnosisSource={well.diagnosis_source}
+            mlMatchNote={well.ml_match_note}
           />
           <RecommendationSummary
             data={optimizeData}

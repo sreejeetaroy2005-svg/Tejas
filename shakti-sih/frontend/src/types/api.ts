@@ -10,6 +10,11 @@ export interface WellSummary {
   oil_bpd: number;
   reservoir_temperature_c: number;
   last_updated: string;
+  ml_condition?: string;
+  ml_confidence?: number;
+  ml_gi_probability?: number;
+  diagnosis_source?: string;
+  ml_match_note?: string;
 }
 
 export interface WellsResponse {
@@ -90,6 +95,17 @@ export interface BestOption {
   risk_label: string;
   composite_score: number;
   contributing_factors: Record<string, number>;
+  risk_source?: string;
+}
+
+export interface CycleRecommendation {
+  steam_volume_tonnes: number;
+  injection_pressure_psi: number;
+  soak_time_days: number;
+  production_days: number;
+  cumulative_oil_bbl: number;
+  final_sor: number;
+  cutoff_trigger: string;
 }
 
 export interface OptimizeResponse {
@@ -99,5 +115,8 @@ export interface OptimizeResponse {
   alternatives_evaluated: number;
   score_breakdown: Record<string, any>;
   explanation: string;
+  ml_diagnosis_warning?: string;
+  current_ml_condition?: string;
+  cycle_recommendation?: CycleRecommendation;
   data_note: string;
 }

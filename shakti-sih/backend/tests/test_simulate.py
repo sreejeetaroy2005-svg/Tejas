@@ -137,10 +137,28 @@ class TestSimulateAPI:
         assert data["overrides"]["spm"] == 5.0
 
     def test_with_vfd_override(self):
-        """VFD override should be accepted."""
+        """VFD override should be accepted and affect motor current.
+
+        VFD is no longer a no-op: a lower VFD reduces projected motor current
+        slightly (see simulator.py VFD modelling note).  We test that two
+        different VFD values produce different motor current projections.
+        """
         resp = client.post("/api/simulate", json={"vfd_frequency_hz": 35.0})
         assert resp.status_code == 200
-        assert resp.json()["overrides"]["vfd_frequency_hz"] == 35.0
+        data_low = resp.json()
+        assert data_low["overrides"]["vfd_frequency_hz"] == 35.0
+
+        resp_high = client.post("/api/simulate", json={"vfd_frequency_hz": 48.0})
+        assert resp_high.status_code == 200
+        data_high = resp_high.json()
+
+        # Higher VFD should produce higher or equal motor current
+        motor_low = data_low["projected"]["motor_current_a"]
+        motor_high = data_high["projected"]["motor_current_a"]
+        assert motor_high >= motor_low, (
+            f"Higher VFD ({48.0} Hz) should produce >= motor current than "
+            f"lower VFD ({35.0} Hz): got {motor_high:.2f} vs {motor_low:.2f}"
+        )
 
     def test_risk_in_valid_range(self):
         """Risk score should always be 0–100."""

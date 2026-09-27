@@ -14,6 +14,7 @@ import {
   Droplets,
   ShieldCheck,
   Lightbulb,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -382,6 +383,17 @@ export default function OptimizePage() {
                     })}
                 </div>
               </div>
+              {data.ml_diagnosis_warning && (
+                <div className="border border-attention/50 bg-attention/10 text-attention-foreground mt-4 rounded-md p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <h5 className="font-semibold text-sm">ML Diagnosis Mismatch</h5>
+                  </div>
+                  <p className="text-xs leading-relaxed opacity-90 pl-6">
+                    {data.ml_diagnosis_warning}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

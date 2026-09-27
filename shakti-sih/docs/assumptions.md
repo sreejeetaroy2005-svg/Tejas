@@ -43,6 +43,18 @@ The exact numeric values are illustrative, not field-calibrated.
 - Water cut and gas rate are simple proportional approximations, not
   reservoir-simulated.
 
+## Injection Pressure model
+- Empirical approximation: higher injection pressure increases heat transfer and reservoir heating efficiency up to an optimum (~1400 psi).
+- Beyond this threshold, diminishing returns are modeled via a quadratic penalty, representing phenomena like steam breakthrough or heat loss to non-productive zones.
+
+## Soak-Time Trade-Off
+- A longer soak duration allows more conductive heat transfer (keeping viscosity low longer), but results in lost calendar-time production during the soak phase itself.
+- Cycle optimization evaluates this trade-off by comparing multi-day cumulative recovery across different hypothetical soak lengths.
+
+## Cycle Cutoff Rule
+- The economic cutoff for a cycle's production stage is defined by two configurable thresholds: minimum oil production rate (default 15 bpd) and maximum Steam-Oil Ratio (SOR) (default 0.35).
+- Production triggers a cutoff rule when oil_bpd drops below the minimum AND trailing cumulative SOR rises above the maximum threshold, prompting the start of a new CSS cycle.
+
 ## Pump (SRP) behavior — the core of the risk story
 
 - The operator's pump setpoint (SPM ~9, VFD ~42 Hz) does **not**

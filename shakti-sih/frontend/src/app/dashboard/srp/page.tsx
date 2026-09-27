@@ -104,6 +104,10 @@ export default function SrpHealthPage() {
           motor_current_a: mockExtendedWell.motor_current_a,
           estimated_fillage_pct: mockExtendedWell.estimated_fillage_pct,
           risk_factors: mockExtendedWell.risk_factors,
+          ml_condition: base.ml_condition,
+          ml_confidence: base.ml_confidence,
+          diagnosis_source: base.diagnosis_source,
+          ml_match_note: base.ml_match_note,
         });
       }
 
@@ -274,6 +278,10 @@ export default function SrpHealthPage() {
           riskLabel={currentRiskLabel}
           riskFactors={well.risk_factors}
           loading={loading}
+          mlCondition={well.ml_condition}
+          mlConfidence={well.ml_confidence}
+          diagnosisSource={well.diagnosis_source}
+          mlMatchNote={well.ml_match_note}
         />
 
         {/* ─── Dynamometer Card Analysis ─── */}

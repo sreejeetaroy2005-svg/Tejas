@@ -2,7 +2,22 @@
 
 All models use strict typing and are designed for JSON serialization.
 All data is synthetic demonstration data.
+
+Diagnosis source tags
+---------------------
+diagnosis_source = "ml_classifier"
+    Risk and condition data come from classify_card() via the trained
+    RandomForest, fed a nearest-neighbour card from the synthetic dynacard
+    library matched to the well's current operating state.
+
+diagnosis_source = "rule_based_projection"
+    Risk score is the rule-based formula from risk_engine.py, used for
+    scoring hypothetical (unobserved) SPM/VFD/steam candidates in the
+    optimizer's grid search.  This proxy is NOT the same metric as the
+    ML-classified condition shown on real-well status pages.
 """
+
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -33,6 +48,41 @@ class WellSummary(BaseModel):
     )
     last_updated: str = Field(
         ..., description="Date of most recent data point (YYYY-MM-DD)"
+    )
+
+    # --- ML classifier fields (present when a dynacard match is available) ---
+    ml_condition: Optional[str] = Field(
+        default=None,
+        description=(
+            "Pump condition predicted by the trained ML classifier: "
+            "Normal / Rod Floating / Fluid Pound / Gas Interference, "
+            "or 'Gas Interference (low confidence)' when GI probability "
+            "is below threshold.  None when classifier was not run."
+        ),
+    )
+    ml_confidence: Optional[float] = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description="Classifier confidence for ml_condition (0–1).",
+    )
+    ml_gi_probability: Optional[float] = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description="Raw Gas Interference class probability (0–1).",
+    )
+    diagnosis_source: str = Field(
+        default="rule_based_projection",
+        description=(
+            "'ml_classifier' — condition from trained RandomForest on a "
+            "nearest-neighbour dynacard. "
+            "'rule_based_projection' — fallback formula from risk_engine.py."
+        ),
+    )
+    ml_match_note: Optional[str] = Field(
+        default=None,
+        description="Provenance note describing how the nearest-neighbour card was selected.",
     )
 
 
@@ -162,7 +212,13 @@ class OptimizeRequest(BaseModel):
 
 
 class BestOption(BaseModel):
-    """The highest-scoring operating point from the grid search."""
+    """The highest-scoring operating point from the grid search.
+
+    risk_score and risk_label here are from the rule-based projection formula
+    (risk_engine.py), NOT from the ML classifier.  They are used as a proxy
+    objective for ranking hypothetical candidates that have no real dynacard.
+    See risk_source for the tag that makes this explicit.
+    """
 
     spm: float
     vfd_frequency_hz: float
@@ -174,10 +230,36 @@ class BestOption(BaseModel):
     risk_label: str
     composite_score: float
     contributing_factors: dict[str, float]
+    risk_source: str = Field(
+        default="rule_based_projection",
+        description=(
+            "Always 'rule_based_projection' for grid-search candidates — "
+            "the rule-based formula scores hypothetical operating points that "
+            "have no real dynacard to classify."
+        ),
+    )
 
+
+class CycleRecommendation(BaseModel):
+    """The highest-scoring cycle-level operating point."""
+    steam_volume_tonnes: float
+    injection_pressure_psi: float
+    soak_time_days: int
+    production_days: int
+    cumulative_oil_bbl: float
+    final_sor: float
+    cutoff_trigger: str
 
 class OptimizeResponse(BaseModel):
-    """Response from POST /api/optimize/{well_id}."""
+    """Response from POST /api/optimize/{well_id}.
+
+    The optimizer's risk_score is a rule-based proxy used to rank hypothetical
+    SPM/VFD/steam combinations during grid search.  If the well has a recent
+    ML-classified dynacard reading, ml_diagnosis_warning will be non-None when
+    the ML classifier's condition disagrees substantially with the rule-based
+    projection — e.g. the rule-based score says Low but the ML classifier found
+    high-confidence Rod Floating.  Operators should investigate before acting.
+    """
 
     well_id: str
     current: dict
@@ -185,6 +267,23 @@ class OptimizeResponse(BaseModel):
     alternatives_evaluated: int
     score_breakdown: dict
     explanation: str
+    ml_diagnosis_warning: Optional[str] = Field(
+        default=None,
+        description=(
+            "Non-None when the ML classifier's current diagnosis for this well "
+            "disagrees substantially with the rule-based risk projection used "
+            "by the optimizer.  Operators should investigate before applying "
+            "the recommendation."
+        ),
+    )
+    current_ml_condition: Optional[str] = Field(
+        default=None,
+        description="ML classifier's current condition for this well (if available).",
+    )
+    cycle_recommendation: Optional[CycleRecommendation] = Field(
+        default=None,
+        description="Recommended parameters for the next full CSS cycle.",
+    )
     data_note: str = Field(
         default="Synthetic demonstration data — not real Oil India field data.",
     )

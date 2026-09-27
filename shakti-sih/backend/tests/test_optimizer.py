@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services.data_service import load_data, get_dataframe
-from app.services.optimizer import composite_score, _normalise, optimise
+from app.services.optimizer import composite_score, _normalise, optimise, DEFAULT_VFD_FIXED_HZ
 
 load_data()
 client = TestClient(app)
@@ -70,12 +70,16 @@ class TestSafeLimits:
             current_sor=0.15,
             current_oil_bpd=50.0,
             current_risk_score=50.0,
+            current_viscosity_cp=4000.0,
         )
         assert "best_option" in result
         assert result["alternatives_evaluated"] > 0
 
     def test_best_option_within_ranges(self):
-        """Best SPM/VFD/steam should be within the search ranges."""
+        """Best SPM/steam should be within the search ranges.
+
+        VFD is no longer grid-searched — it is fixed at DEFAULT_VFD_FIXED_HZ.
+        """
         result = optimise(
             current_temp_c=60.0,
             css_stage="production",
@@ -85,10 +89,12 @@ class TestSafeLimits:
             current_sor=0.15,
             current_oil_bpd=50.0,
             current_risk_score=50.0,
+            current_viscosity_cp=4000.0,
         )
         best = result["best_option"]
         assert 4.0 <= best["spm"] <= 10.0
-        assert 30.0 <= best["vfd_frequency_hz"] <= 50.0
+        # VFD is fixed, not grid-searched
+        assert abs(best["vfd_frequency_hz"] - DEFAULT_VFD_FIXED_HZ) < 0.01
         assert 100.0 <= best["steam_volume_tonnes"] <= 260.0
 
     def test_custom_ranges_respected(self):
@@ -102,6 +108,7 @@ class TestSafeLimits:
             current_sor=0.15,
             current_oil_bpd=50.0,
             current_risk_score=50.0,
+            current_viscosity_cp=4000.0,
             spm_range=(5.0, 7.0),
         )
         best = result["best_option"]
@@ -118,6 +125,7 @@ class TestSafeLimits:
             current_sor=0.15,
             current_oil_bpd=50.0,
             current_risk_score=50.0,
+            current_viscosity_cp=4000.0,
         )
         assert len(result["explanation"]) > 20
 
@@ -132,6 +140,7 @@ class TestSafeLimits:
             current_sor=0.15,
             current_oil_bpd=50.0,
             current_risk_score=50.0,
+            current_viscosity_cp=4000.0,
         )
         bd = result["score_breakdown"]
         expected_composite = (
@@ -177,7 +186,11 @@ class TestOptimizeAPI:
         assert expected_fields.issubset(set(best.keys()))
 
     def test_alternatives_count(self):
-        """Should evaluate a reasonable number of alternatives (> 50)."""
+        """Should evaluate a reasonable number of alternatives (>= 50).
+
+        VFD is fixed (not grid-searched), so candidate count = |SPM| × |steam|.
+        Default: SPM 4.0-10.0 step 0.5 = 13 values × steam 100-260 step 20 = 9 values = 117.
+        """
         data = client.post("/api/optimize/BGW-01").json()
         assert data["alternatives_evaluated"] >= 50
 
