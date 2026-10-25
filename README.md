@@ -26,11 +26,13 @@
 | 🖥️ Live demo | https://tejas-navy.vercel.app/ |
 | 🎥 Video | https://youtu.be/V4qazCjrN8g |
 
-`<!-- TODO: drag screenshots into the table below -->`
+| Dashboard Overview | Forecast |
+|---|---|
+| ![Dashboard Overview](shakti-sih/docs/overview.png) | ![Forecast](shakti-sih/docs/forecast.png) |
 
-| Dashboard | Optimizer | Dynacard Classifier |
-|---|---|---|
-| *(screenshot)* | *(screenshot)* | *(screenshot)* |
+| Optimizer | Dynacard Classifier |
+|---|---|
+| ![Optimizer](shakti-sih/docs/optimize.png) | ![Dynacard Classifier](shakti-sih/docs/dyna%20cards.png) |
 
 ---
 
