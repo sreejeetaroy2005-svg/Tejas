@@ -134,6 +134,8 @@ class SimulateRequest(BaseModel):
     """Override values for a what-if simulation.
 
     All fields are optional — omitted fields use the well's current values.
+    spm lower bound matches SPM_MIN_OPERATIONAL in simulator.py (4.0 SPM —
+    the wax-deposition / gas-lock floor for heavy-oil CSS SRP).
     """
 
     steam_volume_tonnes: float | None = Field(
@@ -152,7 +154,11 @@ class SimulateRequest(BaseModel):
         None,
         ge=4.0,
         le=10.0,
-        description="Strokes per minute override. Valid range: 4.0–10.0.",
+        description=(
+            "Strokes per minute override. Valid range: 4.0–10.0. "
+            "Lower bound is the operational wax-deposition / gas-lock floor "
+            "(SPM_MIN_OPERATIONAL in simulator.py)."
+        ),
     )
     vfd_frequency_hz: float | None = Field(
         None,
@@ -434,15 +440,15 @@ class BacktestResponse(BaseModel):
     limitation: str = Field(..., description="Key limitation — both arms scored by the same simulator")
     energy_note: str = Field(
         ...,
-        description=(
-            "Explanation of the large energy reduction: optimizer always picks "
-            "minimum SPM because oil production does not depend on SPM in the "
-            "simulator's equations."
-        ),
+        description="SPM variation summary and explanation of energy/oil trade-off.",
     )
     date_range: dict = Field(..., description="{'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}")
     n_days: int = Field(..., description="Number of days replayed (180)")
     assumptions: dict = Field(..., description="Key modelling assumptions")
+    spm_diagnostics: dict = Field(
+        default_factory=dict,
+        description="SPM distribution chosen by optimizer: min, max, mean, distribution per value.",
+    )
     baseline: BacktestArm
     tejas: BacktestArm
     delta_tejas_minus_baseline: BacktestDelta

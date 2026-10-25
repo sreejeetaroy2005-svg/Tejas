@@ -139,12 +139,115 @@ class TestBacktestStructure:
                       "oil_bpd", "energy_kwh", "sor", "risk_score", "risk_label"):
             assert field in row, f"daily_baseline row missing field: {field}"
 
+    def test_spm_diagnostics_present(self, results):
+        assert "spm_diagnostics" in results
+        diag = results["spm_diagnostics"]
+        for key in ("min", "max", "mean", "unique_values", "days_at_minimum_spm", "distribution"):
+            assert key in diag, f"spm_diagnostics missing key: {key}"
+
+    def test_tejas_spm_varies_across_days(self, results):
+        """After the SPM-oil coupling fix, the optimizer must NOT always pick the same SPM."""
+        t_spm = [r["spm_used"] for r in results["daily_tejas"]]
+        unique_spms = set(t_spm)
+        assert len(unique_spms) > 1, (
+            f"Optimizer picked identical SPM={t_spm[0]} on every day — "
+            "SPM-oil coupling may not be active."
+        )
+
+    def test_both_arms_use_same_simulator_oil_check(self, results):
+        """On a day where Tejas picks the same SPM as baseline, oil must be equal."""
+        for b_row, t_row in zip(results["daily_baseline"], results["daily_tejas"]):
+            if abs(b_row["spm_used"] - t_row["spm_used"]) < 0.01:
+                assert abs(b_row["oil_bpd"] - t_row["oil_bpd"]) < 1.0, (
+                    f"Same SPM {b_row['spm_used']} on {b_row['date']} but oil differs: "
+                    f"baseline={b_row['oil_bpd']}, tejas={t_row['oil_bpd']}"
+                )
+
 
 # ---------------------------------------------------------------------------
 # API endpoint tests
 # ---------------------------------------------------------------------------
 
-class TestBacktestEndpoint:
+class TestSimulatorSpmCoupling:
+    """Tests that SPM is now a genuine trade-off in the simulator."""
+
+    def test_oil_falls_at_very_low_spm_hot_well(self):
+        """Hot well: pump-limited at low SPM → oil decreases below crossover."""
+        from app.services.simulator import simulate_next_day
+        # Hot well — reservoir inflow is high, pump becomes the bottleneck at low SPM
+        high_spm = simulate_next_day(110.0, "production", 0.2, 9.0, 42.0, 0.3)
+        low_spm  = simulate_next_day(110.0, "production", 0.2, 4.0, 42.0, 0.3)
+        assert low_spm["oil_bpd"] < high_spm["oil_bpd"], (
+            f"Expected oil to fall at low SPM on hot well: "
+            f"SPM=4→{low_spm['oil_bpd']:.1f}, SPM=9→{high_spm['oil_bpd']:.1f}"
+        )
+
+    def test_oil_identical_at_sufficient_spm(self):
+        """Cold well: reservoir-limited → changing SPM above the crossover doesn't gain oil."""
+        from app.services.simulator import simulate_next_day
+        # Cold well — low inflow regardless of SPM
+        mid  = simulate_next_day(55.0, "production", 0.5, 6.5, 42.0, 0.3)
+        high = simulate_next_day(55.0, "production", 0.5, 9.0, 42.0, 0.3)
+        # Oil should be equal (both above pump crossover for cold inflow)
+        assert abs(mid["oil_bpd"] - high["oil_bpd"]) < 2.0, (
+            f"Cold well oil should be reservoir-limited: SPM=6.5→{mid['oil_bpd']:.1f}, "
+            f"SPM=9→{high['oil_bpd']:.1f}"
+        )
+
+    def test_risk_rises_at_high_spm_thick_oil(self):
+        """Thick oil + high SPM → excess-SPM risk component activates."""
+        from app.services.simulator import simulate_next_day
+        low_spm  = simulate_next_day(55.0, "production", 0.5, 5.0, 42.0, 0.3)
+        high_spm = simulate_next_day(55.0, "production", 0.5, 9.0, 42.0, 0.3)
+        assert high_spm["risk_score"] > low_spm["risk_score"], (
+            f"Risk should rise at high SPM with thick oil: "
+            f"SPM=5→{low_spm['risk_score']:.1f}, SPM=9→{high_spm['risk_score']:.1f}"
+        )
+
+    def test_energy_increases_monotonically_with_spm(self):
+        """Energy always increases as SPM increases (energy = 9*SPM + 0.15*current)."""
+        from app.services.simulator import simulate_next_day
+        prev_energy = 0.0
+        for spm in [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]:
+            r = simulate_next_day(80.0, "production", 0.3, spm, 42.0, 0.3)
+            assert r["energy_kwh"] >= prev_energy - 0.1, (
+                f"Energy should increase with SPM: SPM={spm} gives {r['energy_kwh']:.1f}"
+            )
+            prev_energy = r["energy_kwh"]
+
+    def test_compute_pump_capacity_scales_with_spm(self):
+        """pump_capacity_bpd is proportional to SPM."""
+        from app.services.simulator import compute_pump_capacity
+        cap4 = compute_pump_capacity(4.0, 80.0)
+        cap8 = compute_pump_capacity(8.0, 80.0)
+        assert abs(cap8 / cap4 - 2.0) < 0.01, (
+            f"Pump capacity should double when SPM doubles: {cap4:.1f} → {cap8:.1f}"
+        )
+
+    def test_spm_below_floor_raises(self):
+        """compute_pump_capacity must raise ValueError below SPM_MIN_OPERATIONAL."""
+        from app.services.simulator import compute_pump_capacity, SPM_MIN_OPERATIONAL
+        import pytest
+        with pytest.raises(ValueError, match="SPM_MIN_OPERATIONAL"):
+            compute_pump_capacity(SPM_MIN_OPERATIONAL - 0.5, 80.0)
+
+    def test_spm_floor_matches_api_minimum(self):
+        """SPM_MIN_OPERATIONAL in simulator must equal the ge= bound in SimulateRequest."""
+        from app.services.simulator import SPM_MIN_OPERATIONAL
+        from app.models import SimulateRequest
+        import pydantic
+        # The field metadata ge value must equal SPM_MIN_OPERATIONAL
+        field = SimulateRequest.model_fields["spm"]
+        # Pydantic v2: constraints are in field.metadata
+        ge_value = None
+        for constraint in field.metadata:
+            if hasattr(constraint, "ge"):
+                ge_value = constraint.ge
+                break
+        assert ge_value is not None, "SimulateRequest.spm missing ge constraint"
+        assert ge_value == SPM_MIN_OPERATIONAL, (
+            f"API spm minimum ({ge_value}) does not match SPM_MIN_OPERATIONAL ({SPM_MIN_OPERATIONAL})"
+        )
 
     @pytest.mark.skipif(
         not _results_exist(),

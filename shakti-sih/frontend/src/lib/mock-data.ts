@@ -323,9 +323,10 @@ export const mockBacktestResponse: BacktestResponse = {
     "appear worse on simulated metrics. Any improvement is within-model and " +
     "optimistic — not a real field result. All data is synthetic.",
   energy_note:
-    "The energy reduction reflects that the optimizer always selects minimum SPM. " +
-    "In the simulator oil production does not depend on SPM, so minimum SPM always " +
-    "wins on energy without sacrificing oil. This is a model artifact.",
+    "SPM now affects production (min of reservoir inflow and pump capacity). " +
+    "The optimizer chooses SPM=4.0-5.5 (mean 4.23). On 142/180 days it picks " +
+    "SPM=4.0 — these are cold high-viscosity days where reservoir inflow is already low. " +
+    "On hotter days it raises SPM to avoid pump-limitation.",
   date_range: { start: "2025-01-01", end: "2025-06-29" },
   n_days: 180,
   assumptions: {
@@ -333,6 +334,14 @@ export const mockBacktestResponse: BacktestResponse = {
       "days_since_steam_injection / max per cycle, clamped 0-1, zero on non-production days",
     vfd: "Both arms use the recorded vfd_frequency_hz",
     injection_pressure: "Passed to simulator only on injection days",
+  },
+  spm_diagnostics: {
+    min: 4.0,
+    max: 5.5,
+    mean: 4.23,
+    unique_values: [4.0, 4.5, 5.0, 5.5],
+    days_at_minimum_spm: 142,
+    distribution: { "4.0": 142, "4.5": 12, "5.0": 6, "5.5": 20 },
   },
   baseline: {
     high_risk_days: 26,
@@ -348,15 +357,15 @@ export const mockBacktestResponse: BacktestResponse = {
     medium_risk_days: 92,
     low_risk_days: 88,
     avg_risk_score: 31.64,
-    total_oil_bbl: 12593.4,
-    total_energy_kwh: 7451.6,
+    total_oil_bbl: 12592.3,
+    total_energy_kwh: 7829.6,
     avg_sor: 0.1493,
   },
   delta_tejas_minus_baseline: {
     high_risk_days: -26,
     avg_risk_score: -8.17,
-    total_oil_bbl: 0.0,
-    total_energy_kwh: -8104.4,
+    total_oil_bbl: -1.1,
+    total_energy_kwh: -7726.4,
     avg_sor: 0.0,
   },
   daily_baseline: [],

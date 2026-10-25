@@ -191,6 +191,16 @@ def run_backtest(verbose: bool = True) -> dict:
         "avg_sor":          round(t_agg["avg_sor"]          - b_agg["avg_sor"],          4),
     }
 
+    # SPM variation diagnostics
+    from collections import Counter
+    t_spm_vals = [r["spm_used"] for r in tejas_rows]
+    spm_counts = Counter(t_spm_vals)
+    spm_min = round(float(min(t_spm_vals)), 2)
+    spm_max = round(float(max(t_spm_vals)), 2)
+    spm_mean = round(float(sum(t_spm_vals) / len(t_spm_vals)), 2)
+    spm_unique = sorted(spm_counts.keys())
+    spm_at_minimum = int(spm_counts.get(spm_min, 0))
+
     results = {
         "method": (
             "Both arms evaluated with the same simulate_next_day() function. "
@@ -205,15 +215,23 @@ def run_backtest(verbose: bool = True) -> dict:
             "All data is synthetic."
         ),
         "energy_note": (
-            "The large energy reduction (-52%) reflects that the optimizer always "
-            "selects SPM=4.0 (the grid minimum). In the simulator's energy formula "
-            "(energy = 9.0*SPM + 0.15*motor_current), SPM dominates, and oil "
-            "production does not depend on SPM — only on viscosity and the "
-            "production decline factor. The optimizer therefore achieves the same "
-            "oil at minimum SPM every day. This is mechanically guaranteed by the "
-            "model equations and does NOT mean a real field pump should run at "
-            "minimum SPM — that would cause fluid pound and rod floating."
+            f"SPM now affects production (min of reservoir inflow and pump capacity). "
+            f"The optimizer chooses SPM={spm_min}-{spm_max} (mean {spm_mean}). "
+            f"On {spm_at_minimum}/{n} days it still picks SPM={spm_min} — these are "
+            f"cold high-viscosity days where reservoir inflow is already low and the "
+            f"pump is never the bottleneck at any SPM. "
+            f"On hotter days it raises SPM to avoid oil loss from pump-limitation. "
+            f"The energy reduction is real within the model but optimistic as a "
+            f"field prediction."
         ),
+        "spm_diagnostics": {
+            "min": spm_min,
+            "max": spm_max,
+            "mean": spm_mean,
+            "unique_values": spm_unique,
+            "days_at_minimum_spm": spm_at_minimum,
+            "distribution": {str(k): int(v) for k, v in sorted(spm_counts.items())},
+        },
         "date_range":   {"start": str(df["date"].iloc[0]), "end": str(df["date"].iloc[-1])},
         "n_days":       n,
         "assumptions": {

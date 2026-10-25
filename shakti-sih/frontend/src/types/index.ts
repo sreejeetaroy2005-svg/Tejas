@@ -202,6 +202,14 @@ export interface BacktestResponse {
   date_range: { start: string; end: string };
   n_days: number;
   assumptions: Record<string, string>;
+  spm_diagnostics: {
+    min: number;
+    max: number;
+    mean: number;
+    unique_values: number[];
+    days_at_minimum_spm: number;
+    distribution: Record<string, number>;
+  };
   baseline: BacktestArm;
   tejas: BacktestArm;
   delta_tejas_minus_baseline: BacktestDelta;

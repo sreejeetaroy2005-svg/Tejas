@@ -49,7 +49,12 @@ from app.services.simulator import simulate_next_day
 # ---------------------------------------------------------------------------
 # Search-space defaults (matching generator clipping ranges)
 # ---------------------------------------------------------------------------
-DEFAULT_SPM_RANGE = (4.0, 10.0)
+# SPM lower bound matches SPM_MIN_OPERATIONAL from simulator.py (4.0).
+# Do NOT lower this below SPM_MIN_OPERATIONAL — the simulator will raise
+# ValueError for any candidate below that floor.
+from app.services.simulator import SPM_MIN_OPERATIONAL as _SPM_MIN
+
+DEFAULT_SPM_RANGE = (_SPM_MIN, 10.0)
 DEFAULT_SPM_STEP = 0.5
 
 # VFD: fixed representative value — no longer grid-searched (see module docstring)
