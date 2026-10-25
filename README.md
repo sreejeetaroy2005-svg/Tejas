@@ -23,9 +23,8 @@
 
 | | |
 |---|---|
-| 🖥️ Live demo | `<!-- TODO: Vercel / Render URL -->` |
-| 🎥 Video | `<!-- TODO: YouTube / Drive link -->` |
-| 📊 Slides | `<!-- TODO: Google Slides / PDF -->` |
+| 🖥️ Live demo | https://tejas-navy.vercel.app/ |
+| 🎥 Video | https://youtu.be/V4qazCjrN8g |
 
 `<!-- TODO: drag screenshots into the table below -->`
 
