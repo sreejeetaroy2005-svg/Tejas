@@ -1,11 +1,18 @@
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-pandas>=2.0.0
-pydantic>=2.0.0
-pytest>=7.0.0
-httpx>=0.25.0
-xgboost>=2.0.0
-scikit-learn>=1.3.0
-joblib>=1.3.0
-python-dotenv>=1.0.0
-supabase>=2.0.0
+# Runtime dependencies — pinned to versions used during development.
+# Install:  pip install -r requirements.txt
+# Dev/test:  pip install -r requirements-dev.txt
+
+fastapi==0.121.1
+uvicorn[standard]==0.38.0
+pandas==3.0.3
+pydantic==2.13.4
+xgboost==3.4.1
+scikit-learn==1.8.0
+joblib==1.5.3
+scipy==1.17.1
+numpy==2.3.4
+python-dotenv==1.2.1
+
+# Optional — only needed when SUPABASE_URL / SUPABASE_SECRET_KEY are set.
+# The app falls back to local CSV if these env vars are absent.
+supabase==2.31.0
