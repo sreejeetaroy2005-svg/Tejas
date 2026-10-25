@@ -15,6 +15,7 @@ import {
   DynacardExample,
   DynacardClassification,
   ForecastResponse,
+  BacktestResponse,
 } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -307,4 +308,58 @@ export const mockDynacardClassification: DynacardClassification = {
     "The plunger is filling properly on the upstroke and the rod loads are balanced.",
   recommended_action:
     "No corrective action needed. Continue current SRP settings and monitor.",
+};
+
+// ---------------------------------------------------------------------------
+// Backtest (GET /api/backtest) — real numbers from the 180-day replay
+// ---------------------------------------------------------------------------
+export const mockBacktestResponse: BacktestResponse = {
+  method:
+    "Both arms evaluated with the same simulate_next_day() function. " +
+    "Baseline uses recorded CSV settings. Tejas arm calls optimise() " +
+    "on each day's state and re-evaluates the recommended settings with the same simulator.",
+  limitation:
+    "The optimizer's objective function IS the simulator, so Tejas cannot " +
+    "appear worse on simulated metrics. Any improvement is within-model and " +
+    "optimistic — not a real field result. All data is synthetic.",
+  energy_note:
+    "The energy reduction reflects that the optimizer always selects minimum SPM. " +
+    "In the simulator oil production does not depend on SPM, so minimum SPM always " +
+    "wins on energy without sacrificing oil. This is a model artifact.",
+  date_range: { start: "2025-01-01", end: "2025-06-29" },
+  n_days: 180,
+  assumptions: {
+    cycle_prod_progress:
+      "days_since_steam_injection / max per cycle, clamped 0-1, zero on non-production days",
+    vfd: "Both arms use the recorded vfd_frequency_hz",
+    injection_pressure: "Passed to simulator only on injection days",
+  },
+  baseline: {
+    high_risk_days: 26,
+    medium_risk_days: 84,
+    low_risk_days: 70,
+    avg_risk_score: 39.81,
+    total_oil_bbl: 12593.4,
+    total_energy_kwh: 15556.0,
+    avg_sor: 0.1493,
+  },
+  tejas: {
+    high_risk_days: 0,
+    medium_risk_days: 92,
+    low_risk_days: 88,
+    avg_risk_score: 31.64,
+    total_oil_bbl: 12593.4,
+    total_energy_kwh: 7451.6,
+    avg_sor: 0.1493,
+  },
+  delta_tejas_minus_baseline: {
+    high_risk_days: -26,
+    avg_risk_score: -8.17,
+    total_oil_bbl: 0.0,
+    total_energy_kwh: -8104.4,
+    avg_sor: 0.0,
+  },
+  daily_baseline: [],
+  daily_tejas: [],
+  data_note: "MOCK DATA — API Unreachable",
 };

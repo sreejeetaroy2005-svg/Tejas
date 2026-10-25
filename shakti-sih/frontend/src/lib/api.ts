@@ -17,6 +17,7 @@ import {
   DynacardClassifyRequest,
   DynacardClassification,
   ForecastResponse,
+  BacktestResponse,
 } from "@/types";
 
 import {
@@ -28,6 +29,7 @@ import {
   mockDynacardExamples,
   mockDynacardClassification,
   mockForecastResponse,
+  mockBacktestResponse,
 } from "./mock-data";
 
 //const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -191,5 +193,19 @@ export async function fetchForecast(
   } catch {
     console.warn("[api] fetchForecast failed — using mock data");
     return { data: mockForecastResponse, isMock: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/backtest
+// ---------------------------------------------------------------------------
+export async function fetchBacktest(): Promise<Result<BacktestResponse>> {
+  try {
+    const res = await fetch(`${API_BASE}/backtest`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return { data: await res.json(), isMock: false };
+  } catch {
+    console.warn("[api] fetchBacktest failed — using mock data");
+    return { data: mockBacktestResponse, isMock: true };
   }
 }

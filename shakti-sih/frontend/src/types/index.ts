@@ -161,6 +161,55 @@ export interface DynacardClassification {
   recommended_action: string;
 }
 
+// ---------------------------------------------------------------------------
+// GET /api/backtest
+// ---------------------------------------------------------------------------
+
+export interface BacktestArm {
+  high_risk_days: number;
+  medium_risk_days: number;
+  low_risk_days: number;
+  avg_risk_score: number;
+  total_oil_bbl: number;
+  total_energy_kwh: number;
+  avg_sor: number;
+}
+
+export interface BacktestDelta {
+  high_risk_days: number;
+  avg_risk_score: number;
+  total_oil_bbl: number;
+  total_energy_kwh: number;
+  avg_sor: number;
+}
+
+export interface BacktestDailyRow {
+  date: string;
+  css_stage: string;
+  spm_used: number;
+  steam_used: number;
+  oil_bpd: number;
+  energy_kwh: number;
+  sor: number;
+  risk_score: number;
+  risk_label: string;
+}
+
+export interface BacktestResponse {
+  method: string;
+  limitation: string;
+  energy_note: string;
+  date_range: { start: string; end: string };
+  n_days: number;
+  assumptions: Record<string, string>;
+  baseline: BacktestArm;
+  tejas: BacktestArm;
+  delta_tejas_minus_baseline: BacktestDelta;
+  daily_baseline: BacktestDailyRow[];
+  daily_tejas: BacktestDailyRow[];
+  data_note: string;
+}
+
 // Forecast types
 export interface ForecastDay {
   date: string;

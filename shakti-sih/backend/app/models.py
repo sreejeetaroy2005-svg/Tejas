@@ -380,3 +380,74 @@ class DynacardClassification(BaseModel):
     top_features: list[str] = Field(..., description="Top 3 most important features for this prediction")
     explanation: str = Field(..., description="Plain-language explanation of the condition")
     recommended_action: str = Field(..., description="Suggested corrective action")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/backtest models
+# ---------------------------------------------------------------------------
+
+
+class BacktestArm(BaseModel):
+    """Aggregate metrics for one arm of the backtest (baseline or Tejas)."""
+
+    high_risk_days: int = Field(..., description="Days with risk_label == 'High'")
+    medium_risk_days: int = Field(..., description="Days with risk_label == 'Medium'")
+    low_risk_days: int = Field(..., description="Days with risk_label == 'Low'")
+    avg_risk_score: float = Field(..., description="Mean risk score across all 180 days")
+    total_oil_bbl: float = Field(..., description="Sum of daily oil_bpd across all 180 days (bbl)")
+    total_energy_kwh: float = Field(..., description="Sum of daily energy_kwh across all 180 days")
+    avg_sor: float = Field(..., description="Mean steam-oil ratio on days where SOR > 0")
+
+
+class BacktestDelta(BaseModel):
+    """Tejas minus Baseline for each headline metric.
+
+    Negative = improvement for risk / energy / SOR.
+    Positive = improvement for oil.
+    """
+
+    high_risk_days: int
+    avg_risk_score: float
+    total_oil_bbl: float
+    total_energy_kwh: float
+    avg_sor: float
+
+
+class BacktestDailyRow(BaseModel):
+    """One day's result for either arm."""
+
+    date: str
+    css_stage: str
+    spm_used: float
+    steam_used: float
+    oil_bpd: float
+    energy_kwh: float
+    sor: float
+    risk_score: float
+    risk_label: str
+
+
+class BacktestResponse(BaseModel):
+    """Response from GET /api/backtest."""
+
+    method: str = Field(..., description="Plain-English description of the comparison method")
+    limitation: str = Field(..., description="Key limitation — both arms scored by the same simulator")
+    energy_note: str = Field(
+        ...,
+        description=(
+            "Explanation of the large energy reduction: optimizer always picks "
+            "minimum SPM because oil production does not depend on SPM in the "
+            "simulator's equations."
+        ),
+    )
+    date_range: dict = Field(..., description="{'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}")
+    n_days: int = Field(..., description="Number of days replayed (180)")
+    assumptions: dict = Field(..., description="Key modelling assumptions")
+    baseline: BacktestArm
+    tejas: BacktestArm
+    delta_tejas_minus_baseline: BacktestDelta
+    daily_baseline: list[BacktestDailyRow]
+    daily_tejas: list[BacktestDailyRow]
+    data_note: str = Field(
+        default="Synthetic demonstration data — not real Oil India field data.",
+    )

@@ -19,6 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { IntroBanner } from "@/components/intro-banner";
+import { BacktestProofCard } from "@/components/backtest-proof-card";
 import { fetchWells, runOptimization } from "@/lib/api";
 import { mockExtendedWell, mockOptimizeResponse } from "@/lib/mock-data";
 import { TOOLTIPS } from "@/lib/tooltips";
@@ -264,6 +265,9 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Proof — backtest comparison card */}
+        <BacktestProofCard />
 
         {/* Disclaimer */}
         <p className="text-[11px] text-muted-foreground text-center pb-4">

@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import wells, simulate, optimize, dynacards
+from app.routers import wells, simulate, optimize, dynacards, backtest
 from app.services.data_service import load_data
 
 
@@ -60,6 +60,7 @@ app.include_router(wells.router, prefix="/api")
 app.include_router(simulate.router, prefix="/api")
 app.include_router(optimize.router, prefix="/api")
 app.include_router(dynacards.router, prefix="/api")
+app.include_router(backtest.router, prefix="/api")
 
 
 # ---------------------------------------------------------------------------
