@@ -394,12 +394,15 @@ tejas/
 
 | Name | Role |
 |---|---|
-| `<!-- TODO -->` | `<!-- TODO -->` |
-| `<!-- TODO -->` | `<!-- TODO -->` |
-| `<!-- TODO -->` | `<!-- TODO -->` |
+| Sreejeeta Roy | Team Leader |
+| Suryansh Singh | Team Member |
+| Priyanka Chourasia | Team Member |
+| Rahul Rajput | Team Member |
+| Raj Vashisht | Team Member |
+| Saanvi Jaiswal | Team Member |
 
-Institution: `<!-- TODO -->`  
-SIH Problem Statement: `<!-- TODO: PS number and title -->`
+Institution: BMS College of Engineering, Bangalore  
+SIH Problem Statement ID: SIH26120
 
 ---
 
