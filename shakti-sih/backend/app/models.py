@@ -457,3 +457,71 @@ class BacktestResponse(BaseModel):
     data_note: str = Field(
         default="Synthetic demonstration data — not real Oil India field data.",
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/fleet/priority models
+# ---------------------------------------------------------------------------
+
+
+class FleetPriorityItem(BaseModel):
+    """Urgency summary for one well in the fleet priority list."""
+
+    well_id: str
+    risk_score: float = Field(..., ge=0, le=100)
+    risk_label: str
+    urgency_score: float = Field(
+        ...,
+        description="Composite urgency = risk_score + ML-condition bonus + viscosity-trend bonus",
+    )
+    css_stage: str
+    days_since_steam_injection: int
+    oil_bpd: float
+    estimated_fillage_pct: float
+    viscosity_cp: float
+    viscosity_trend_3d_pct: float = Field(
+        ..., description="% change in viscosity over last 3 days (positive = rising)"
+    )
+    ml_condition: Optional[str] = None
+    ml_confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    forecast_trend: str = Field(
+        default="stable",
+        description="'declining' when oil fell >10% in last 7 days, else 'stable'",
+    )
+    reason: str = Field(
+        ...,
+        description="One-line plain-English reason derived from real measured values",
+    )
+
+
+class FleetPriorityResponse(BaseModel):
+    """Response from GET /api/fleet/priority."""
+
+    wells: list[FleetPriorityItem]
+    total: int
+    data_note: str = Field(
+        default="Synthetic demonstration data — not real Oil India field data.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/fleet/summary models
+# ---------------------------------------------------------------------------
+
+
+class FleetSummaryResponse(BaseModel):
+    """Fleet-level aggregate statistics."""
+
+    total_wells: int
+    wells_producing: int
+    wells_injecting: int
+    wells_soaking: int
+    total_oil_bpd: float
+    total_energy_kwh: float
+    avg_risk_score: float
+    wells_high_risk: int
+    wells_medium_risk: int
+    wells_low_risk: int
+    data_note: str = Field(
+        default="Synthetic demonstration data — not real Oil India field data.",
+    )

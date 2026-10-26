@@ -15,20 +15,41 @@ load_dotenv()
 
 _DF: pd.DataFrame | None = None
 
-# Relative path to the CSV from this file's location
-_CSV_PATH = os.path.join(
+# Paths to the CSV files — BGW-01 (single-well original) + fleet (BGW-02..12)
+_BGW01_CSV = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "bgw_01_daily.csv"
 )
+_FLEET_CSV = os.path.join(
+    os.path.dirname(__file__), "..", "..", "data", "fleet_daily.csv"
+)
+
 
 def _load_csv_fallback() -> pd.DataFrame:
-    """Load the synthetic daily CSV as a fallback."""
-    resolved = os.path.abspath(_CSV_PATH)
-    if not os.path.exists(resolved):
+    """Load both synthetic CSVs and concatenate into one multi-well DataFrame.
+
+    BGW-01 data is never modified — it is only read here.
+    fleet_daily.csv contains BGW-02 through BGW-12.
+    If fleet_daily.csv does not exist (e.g. first run before generate_fleet.py)
+    only BGW-01 is returned so the app still starts cleanly.
+    """
+    bgw01 = os.path.abspath(_BGW01_CSV)
+    if not os.path.exists(bgw01):
         raise FileNotFoundError(
-            f"Synthetic data CSV not found at {resolved}. "
+            f"Synthetic data CSV not found at {bgw01}. "
             "Run scripts/synthetic_data_generator.py first."
         )
-    return pd.read_csv(resolved)
+    frames = [pd.read_csv(bgw01)]
+
+    fleet = os.path.abspath(_FLEET_CSV)
+    if os.path.exists(fleet):
+        frames.append(pd.read_csv(fleet))
+    else:
+        logging.warning(
+            "fleet_daily.csv not found — multi-well fleet unavailable. "
+            "Run scripts/generate_fleet.py to generate it."
+        )
+
+    return pd.concat(frames, ignore_index=True)
 
 def get_supabase_client() -> Client | None:
     """Create and return a Supabase client if env vars are present."""
