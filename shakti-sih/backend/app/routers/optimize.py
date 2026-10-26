@@ -89,6 +89,7 @@ def optimize_well(well_id: str, req: OptimizeRequest | None = None) -> OptimizeR
         spm_range=req.spm_range if req else None,
         vfd_range=req.vfd_range if req else None,
         steam_range=req.steam_range if req else None,
+        max_oil_loss_pct=req.max_oil_loss_pct if req else 15.0,
     )
 
     if "error" in result:
@@ -122,5 +123,9 @@ def optimize_well(well_id: str, req: OptimizeRequest | None = None) -> OptimizeR
         explanation=result["explanation"],
         ml_diagnosis_warning=result.get("ml_diagnosis_warning"),
         current_ml_condition=result.get("current_ml_condition"),
+        oil_constraint_note=result.get("oil_constraint_note"),
+        oil_constraint_active=result.get("oil_constraint_active", False),
+        note_type=result.get("note_type"),
+        current_projected_oil_bpd=result.get("current_projected_oil_bpd", 0.0),
         cycle_recommendation=cycle_result.get("best_cycle_option"),
     )

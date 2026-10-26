@@ -18,6 +18,8 @@ import {
   DynacardClassification,
   ForecastResponse,
   BacktestResponse,
+  FleetPriorityResponse,
+  FleetSummaryResponse,
 } from "@/types";
 
 import {
@@ -25,11 +27,13 @@ import {
   mockWellSummary,
   mockHistory,
   mockSimulateResponse,
-  mockOptimizeResponse,
+  mockOptimizeResponse, 
   mockDynacardExamples,
   mockDynacardClassification,
   mockForecastResponse,
   mockBacktestResponse,
+  mockFleetPriority,
+  mockFleetSummary,
 } from "./mock-data";
 
 //const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -129,17 +133,22 @@ export async function runSimulation(
 // POST /api/optimize/{well_id}
 // ---------------------------------------------------------------------------
 export async function runOptimization(
-  wellId: string
+  wellId: string,
+  maxOilLossPct: number = 15,
+  signal?: AbortSignal,
 ): Promise<Result<OptimizeResponse>> {
   try {
     const res = await fetch(`${API_BASE}/optimize/${wellId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ max_oil_loss_pct: maxOilLossPct }),
+      signal,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return { data: await res.json(), isMock: false };
-  } catch {
+  } catch (err) {
+    // Re-throw AbortErrors so the caller can detect cancellation
+    if (err instanceof Error && err.name === "AbortError") throw err;
     console.warn("[api] runOptimization failed — using mock data");
     return { data: mockOptimizeResponse, isMock: true };
   }
@@ -207,5 +216,33 @@ export async function fetchBacktest(): Promise<Result<BacktestResponse>> {
   } catch {
     console.warn("[api] fetchBacktest failed — using mock data");
     return { data: mockBacktestResponse, isMock: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/fleet/priority
+// ---------------------------------------------------------------------------
+export async function fetchFleetPriority(): Promise<Result<FleetPriorityResponse>> {
+  try {
+    const res = await fetch(`${API_BASE}/fleet/priority`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return { data: await res.json(), isMock: false };
+  } catch {
+    console.warn("[api] fetchFleetPriority failed — using mock data");
+    return { data: mockFleetPriority, isMock: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/fleet/summary
+// ---------------------------------------------------------------------------
+export async function fetchFleetSummary(): Promise<Result<FleetSummaryResponse>> {
+  try {
+    const res = await fetch(`${API_BASE}/fleet/summary`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return { data: await res.json(), isMock: false };
+  } catch {
+    console.warn("[api] fetchFleetSummary failed — using mock data");
+    return { data: mockFleetSummary, isMock: true };
   }
 }

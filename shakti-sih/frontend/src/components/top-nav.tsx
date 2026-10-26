@@ -1,12 +1,14 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Activity, Beaker, Settings2, BarChart3, Cpu, ScanLine } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Activity, Beaker, Settings2, BarChart3, Cpu, ScanLine, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Overview", icon: Activity },
+  { href: "/dashboard/fleet", label: "Fleet", icon: LayoutGrid },
+  { href: "/dashboard", label: "Well Detail", icon: Activity },
   { href: "/dashboard/production", label: "Production", icon: BarChart3 },
   { href: "/dashboard/srp", label: "SRP Health", icon: Cpu },
   { href: "/dashboard/dynacards", label: "Dynacards", icon: ScanLine },
@@ -15,7 +17,41 @@ const NAV_ITEMS = [
 ];
 
 export function TopNav() {
+  return (
+    <Suspense fallback={<TopNavShell />}>
+      <TopNavInner />
+    </Suspense>
+  );
+}
+
+function TopNavShell() {
+  return (
+    <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
+            <Activity className="h-5 w-5 text-accent-foreground" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-tight">Tejas</h1>
+            <p className="text-[10px] text-muted-foreground leading-none">Heavy-Oil Digital Twin</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function TopNavInner() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const wellParam = searchParams.get("well") ?? "";
+  const wellQuery = wellParam ? `?well=${wellParam}` : "";
+
+  function tabHref(href: string) {
+    if (href === "/dashboard/fleet") return href;
+    return `${href}${wellQuery}`;
+  }
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
@@ -46,7 +82,7 @@ export function TopNav() {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={tabHref(item.href)}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-4 text-xs font-medium transition-colors border-b-2",
                   isActive
@@ -64,9 +100,10 @@ export function TopNav() {
         {/* Status indicator */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <div className="h-2 w-2 rounded-full bg-safe animate-pulse" />
-          <span className="hidden sm:inline">BGW-01</span>
+          <span className="hidden sm:inline">{wellParam || "BGW-01"}</span>
         </div>
       </div>
     </header>
   );
 }
+

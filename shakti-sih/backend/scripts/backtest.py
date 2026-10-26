@@ -47,7 +47,29 @@ if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
 from app.services.simulator import simulate_next_day
-from app.services.optimizer import optimise
+from app.services.optimizer import (
+    optimise,
+    DEFAULT_SPM_RANGE,
+    DEFAULT_SPM_STEP,
+    DEFAULT_STEAM_RANGE,
+    DEFAULT_STEAM_STEP,
+    DEFAULT_VFD_FIXED_HZ,
+)
+
+# ---------------------------------------------------------------------------
+# Optimizer settings used in this backtest run — recorded in the output JSON
+# so the stored file is self-documenting and tests can verify consistency.
+# ---------------------------------------------------------------------------
+BACKTEST_MAX_OIL_LOSS_PCT: float = 15.0  # matches optimise() default
+
+BACKTEST_OPTIMIZER_SETTINGS = {
+    "max_oil_loss_pct":   BACKTEST_MAX_OIL_LOSS_PCT,
+    "spm_range":          list(DEFAULT_SPM_RANGE),
+    "spm_step":           DEFAULT_SPM_STEP,
+    "steam_range":        list(DEFAULT_STEAM_RANGE),
+    "steam_step":         DEFAULT_STEAM_STEP,
+    "vfd_fixed_hz":       DEFAULT_VFD_FIXED_HZ,
+}
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -115,6 +137,7 @@ def _tejas_settings(row: pd.Series, progress: float) -> tuple[float, float]:
         current_oil_bpd      = float(row["oil_bpd"]),
         current_risk_score   = float(row["rod_floating_risk_score"]),
         current_viscosity_cp = float(row["viscosity_cp"]),
+        max_oil_loss_pct     = BACKTEST_MAX_OIL_LOSS_PCT,  # explicit, not default
     )
     best = result["best_option"]
     return float(best["spm"]), float(best["steam_volume_tonnes"])
@@ -232,6 +255,7 @@ def run_backtest(verbose: bool = True) -> dict:
             "days_at_minimum_spm": spm_at_minimum,
             "distribution": {str(k): int(v) for k, v in sorted(spm_counts.items())},
         },
+        "optimizer_settings": BACKTEST_OPTIMIZER_SETTINGS,
         "date_range":   {"start": str(df["date"].iloc[0]), "end": str(df["date"].iloc[-1])},
         "n_days":       n,
         "assumptions": {

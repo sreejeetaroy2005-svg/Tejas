@@ -73,6 +73,8 @@ export interface BestOption {
   risk_label: string;
   composite_score: number;
   contributing_factors: Record<string, number>;
+  oil_change_pct: number;
+  is_current_settings?: boolean;
   risk_source?: string;
 }
 
@@ -86,6 +88,13 @@ export interface CycleRecommendation {
   cutoff_trigger: string;
 }
 
+export interface OptimizeRequest {
+  spm_range?: [number, number];
+  vfd_range?: [number, number];
+  steam_range?: [number, number];
+  max_oil_loss_pct?: number;
+}
+
 export interface OptimizeResponse {
   well_id: string;
   current: Record<string, number | string>;
@@ -95,6 +104,10 @@ export interface OptimizeResponse {
   explanation: string;
   ml_diagnosis_warning?: string;
   current_ml_condition?: string;
+  oil_constraint_note?: string;
+  oil_constraint_active?: boolean;
+  note_type?: "oil_cap" | "risk_guard" | null;
+  current_projected_oil_bpd?: number;
   cycle_recommendation?: CycleRecommendation;
   data_note: string;
 }
@@ -162,6 +175,47 @@ export interface DynacardClassification {
 }
 
 // ---------------------------------------------------------------------------
+// GET /api/fleet/priority + GET /api/fleet/summary
+// ---------------------------------------------------------------------------
+
+export interface FleetPriorityItem {
+  well_id: string;
+  risk_score: number;
+  risk_label: string;
+  urgency_score: number;
+  css_stage: string;
+  days_since_steam_injection: number;
+  oil_bpd: number;
+  estimated_fillage_pct: number;
+  viscosity_cp: number;
+  viscosity_trend_3d_pct: number;
+  ml_condition?: string;
+  ml_confidence?: number;
+  forecast_trend: string;
+  reason: string;
+}
+
+export interface FleetPriorityResponse {
+  wells: FleetPriorityItem[];
+  total: number;
+  data_note: string;
+}
+
+export interface FleetSummaryResponse {
+  total_wells: number;
+  wells_producing: number;
+  wells_injecting: number;
+  wells_soaking: number;
+  total_oil_bpd: number;
+  total_energy_kwh: number;
+  avg_risk_score: number;
+  wells_high_risk: number;
+  wells_medium_risk: number;
+  wells_low_risk: number;
+  data_note: string;
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/backtest
 // ---------------------------------------------------------------------------
 
@@ -209,6 +263,14 @@ export interface BacktestResponse {
     unique_values: number[];
     days_at_minimum_spm: number;
     distribution: Record<string, number>;
+  };
+  optimizer_settings: {
+    max_oil_loss_pct: number;
+    spm_range: [number, number];
+    spm_step: number;
+    steam_range: [number, number];
+    steam_step: number;
+    vfd_fixed_hz: number;
   };
   baseline: BacktestArm;
   tejas: BacktestArm;

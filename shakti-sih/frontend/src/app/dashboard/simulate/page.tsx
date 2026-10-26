@@ -20,8 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { InfoTooltip } from "@/components/info-tooltip";
-import { runSimulation, fetchWells } from "@/lib/api";
+import { runSimulation, fetchWell } from "@/lib/api";
 import { mockExtendedWell, mockSimulateResponse } from "@/lib/mock-data";
+import { useWellId } from "@/lib/use-well-id";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { SimulateResponse, ExtendedWellSummary } from "@/types";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ function riskSeverity(label: string): "safe" | "attention" | "danger" {
 // Page
 // ---------------------------------------------------------------------------
 export default function SimulatePage() {
+  const wellId = useWellId();
   const [well, setWell] = useState<ExtendedWellSummary>(mockExtendedWell);
   const [overrides, setOverrides] = useState({
     spm: DEFAULTS.spm,
@@ -62,12 +64,14 @@ export default function SimulatePage() {
   const [apiDown, setApiDown] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load well data once
+  // Load well data whenever wellId changes; reset overrides to defaults
   useEffect(() => {
+    setOverrides(DEFAULTS);
+    setResult(mockSimulateResponse);
     async function load() {
-      const wellsResult = await fetchWells();
-      if (!wellsResult.isMock && wellsResult.data.wells[0]) {
-        const base = wellsResult.data.wells[0];
+      const wellResult = await fetchWell(wellId);
+      if (!wellResult.isMock) {
+        const base = wellResult.data;
         setWell({
           ...base,
           reservoir_pressure_psi: mockExtendedWell.reservoir_pressure_psi,
@@ -78,11 +82,16 @@ export default function SimulatePage() {
           estimated_fillage_pct: mockExtendedWell.estimated_fillage_pct,
           risk_factors: mockExtendedWell.risk_factors,
         });
+        setApiDown(false);
+      } else {
+        setWell({ ...mockExtendedWell, well_id: wellId, well_name: wellId });
+        setApiDown(true);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wellId]);
 
   // Debounced simulation call
   const runSim = useCallback(

@@ -215,6 +215,20 @@ class OptimizeRequest(BaseModel):
     steam_range: tuple[float, float] | None = Field(
         None, description="(min, max) steam volume range override"
     )
+    max_oil_loss_pct: float = Field(
+        default=15.0,
+        ge=0.0,
+        le=100.0,
+        description=(
+            "Maximum acceptable oil production loss relative to current, as a "
+            "percentage (0–100).  Candidates whose projected oil is lower than "
+            "current by more than this fraction are excluded before ranking.  "
+            "Default: 15.0 (allow up to 15% loss).  "
+            "Set to 100 to disable the constraint entirely.  "
+            "On injection/soak days where current oil_bpd == 0 the constraint "
+            "is skipped automatically."
+        ),
+    )
 
 
 class BestOption(BaseModel):
@@ -236,6 +250,23 @@ class BestOption(BaseModel):
     risk_label: str
     composite_score: float
     contributing_factors: dict[str, float]
+    oil_change_pct: float = Field(
+        default=0.0,
+        description=(
+            "Projected oil change vs the simulator's baseline at current settings, "
+            "as a percentage (signed).  Negative = oil loss vs current settings; "
+            "positive = oil gain.  The current-settings candidate always has 0.0.  "
+            "Zero when _oil_baseline == 0 (injection/soak stage)."
+        ),
+    )
+    is_current_settings: bool = Field(
+        default=False,
+        description=(
+            "True when this option represents keeping the current operating "
+            "settings unchanged.  Set when the risk guard or oil-loss cap "
+            "caused every other candidate to be rejected."
+        ),
+    )
     risk_source: str = Field(
         default="rule_based_projection",
         description=(
@@ -285,6 +316,36 @@ class OptimizeResponse(BaseModel):
     current_ml_condition: Optional[str] = Field(
         default=None,
         description="ML classifier's current condition for this well (if available).",
+    )
+    oil_constraint_note: Optional[str] = Field(
+        default=None,
+        description=(
+            "Non-None when the oil-loss constraint (max_oil_loss_pct) was active "
+            "and affected which candidates were considered, or when the risk guard fired."
+        ),
+    )
+    oil_constraint_active: bool = Field(
+        default=False,
+        description=(
+            "True when the oil-loss constraint excluded at least one candidate "
+            "or when no candidate met the constraint threshold."
+        ),
+    )
+    note_type: Optional[str] = Field(
+        default=None,
+        description=(
+            "'oil_cap' when candidates were excluded by the max_oil_loss_pct filter.  "
+            "'risk_guard' when the risk guard promoted the current-settings candidate.  "
+            "None when neither triggered."
+        ),
+    )
+    current_projected_oil_bpd: float = Field(
+        default=0.0,
+        description=(
+            "The simulator's projected oil production at the current (recorded) SPM "
+            "settings.  This is the baseline used for all oil_change_pct comparisons.  "
+            "Distinct from current.oil_bpd (the recorded CSV value)."
+        ),
     )
     cycle_recommendation: Optional[CycleRecommendation] = Field(
         default=None,
@@ -448,6 +509,13 @@ class BacktestResponse(BaseModel):
     spm_diagnostics: dict = Field(
         default_factory=dict,
         description="SPM distribution chosen by optimizer: min, max, mean, distribution per value.",
+    )
+    optimizer_settings: dict = Field(
+        default_factory=dict,
+        description=(
+            "Optimizer settings used in this backtest run: max_oil_loss_pct, "
+            "spm_range, spm_step, steam_range, steam_step, vfd_fixed_hz."
+        ),
     )
     baseline: BacktestArm
     tejas: BacktestArm

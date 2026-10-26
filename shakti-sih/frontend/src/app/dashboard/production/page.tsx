@@ -11,12 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { InfoTooltip } from "@/components/info-tooltip";
-import { fetchHistory, fetchWells, fetchForecast } from "@/lib/api";
+import { fetchHistory, fetchWells, fetchWell, fetchForecast } from "@/lib/api";
 import { mockHistory, mockExtendedWell } from "@/lib/mock-data";
+import { useWellId } from "@/lib/use-well-id";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { HistoryPoint, ExtendedWellSummary, ForecastDay } from "@/types";
 
 export default function ProductionPage() {
+  const wellId = useWellId();
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [well, setWell] = useState<ExtendedWellSummary>(mockExtendedWell);
   const [loading, setLoading] = useState(true);
@@ -30,19 +32,19 @@ export default function ProductionPage() {
     async function load() {
       setLoading(true);
 
-      const historyResult = await fetchHistory("BGW-01", 90);
+      const historyResult = await fetchHistory(wellId, 90);
       setHistory(historyResult.data);
       setApiDown(historyResult.isMock);
 
-      const forecastResult = await fetchForecast("BGW-01", 7);
+      const forecastResult = await fetchForecast(wellId, 7);
       setForecast(forecastResult.data.forecast);
       setTemperatureMae(forecastResult.data.temperature_mae);
       setProductionMae(forecastResult.data.production_mae);
       setForecastLoading(false);
 
-      const wellsResult = await fetchWells();
-      if (!wellsResult.isMock && wellsResult.data.wells[0]) {
-        const base = wellsResult.data.wells[0];
+      const wellResult = await fetchWell(wellId);
+      if (!wellResult.isMock) {
+        const base = wellResult.data;
         setWell({
           ...base,
           reservoir_pressure_psi: mockExtendedWell.reservoir_pressure_psi,
@@ -58,7 +60,8 @@ export default function ProductionPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wellId]);
 
   // Compute summary stats from history
   const latestPoint = history.length > 0 ? history[history.length - 1] : null;

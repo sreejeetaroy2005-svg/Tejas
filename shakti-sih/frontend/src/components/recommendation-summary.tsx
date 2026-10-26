@@ -171,6 +171,20 @@ export function RecommendationSummary({
           </div>
         )}
 
+        {data.oil_constraint_note && (
+          <div className="border border-attention/50 bg-attention/10 text-attention-foreground rounded-md p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="h-4 w-4" />
+              <h5 className="font-semibold text-[13px]">
+                {data.note_type === "risk_guard" ? "Risk Guard Active" : "Oil-Loss Cap Applied"}
+              </h5>
+            </div>
+            <p className="text-xs leading-relaxed opacity-90 pl-6">
+              {data.oil_constraint_note}
+            </p>
+          </div>
+        )}
+
         <p className="text-[11px] text-muted-foreground">
           {data.data_note}
         </p>

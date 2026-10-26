@@ -31,8 +31,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { InfoTooltip } from "@/components/info-tooltip";
-import { fetchHistory, fetchWells, fetchDynacardExamples } from "@/lib/api";
+import { fetchHistory, fetchWell, fetchDynacardExamples } from "@/lib/api";
 import { mockHistory, mockExtendedWell } from "@/lib/mock-data";
+import { useWellId } from "@/lib/use-well-id";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { HistoryPoint, ExtendedWellSummary, DynacardExample } from "@/types";
 
@@ -74,6 +75,7 @@ const CONDITION_ACTIONS: Record<string, string> = {
 };
 
 export default function SrpHealthPage() {
+  const wellId = useWellId();
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [well, setWell] = useState<ExtendedWellSummary>(mockExtendedWell);
   const [loading, setLoading] = useState(true);
@@ -88,13 +90,13 @@ export default function SrpHealthPage() {
     async function load() {
       setLoading(true);
 
-      const historyResult = await fetchHistory("BGW-01", 90);
+      const historyResult = await fetchHistory(wellId, 90);
       setHistory(historyResult.data);
       setApiDown(historyResult.isMock);
 
-      const wellsResult = await fetchWells();
-      if (!wellsResult.isMock && wellsResult.data.wells[0]) {
-        const base = wellsResult.data.wells[0];
+      const wellResult = await fetchWell(wellId);
+      if (!wellResult.isMock) {
+        const base = wellResult.data;
         setWell({
           ...base,
           reservoir_pressure_psi: mockExtendedWell.reservoir_pressure_psi,
@@ -120,7 +122,8 @@ export default function SrpHealthPage() {
       setDynacardLoading(false);
     }
     load();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wellId]);
 
   // Current values from latest data point or mock
   const latestPoint =

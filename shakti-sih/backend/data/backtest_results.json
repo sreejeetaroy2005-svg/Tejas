@@ -1,24 +1,110 @@
 {
   "method": "Both arms evaluated with the same simulate_next_day() function. Baseline uses recorded CSV settings. Tejas arm calls optimise() on each day's state and re-evaluates the recommended settings with the same simulator.",
   "limitation": "The optimizer's objective function IS the simulator, so Tejas cannot appear worse on simulated metrics. Any improvement is within-model and optimistic \u2014 not a real field result. All data is synthetic.",
-  "energy_note": "SPM now affects production (min of reservoir inflow and pump capacity). The optimizer chooses SPM=4.0-5.5 (mean 4.23). On 142/180 days it still picks SPM=4.0 \u2014 these are cold high-viscosity days where reservoir inflow is already low and the pump is never the bottleneck at any SPM. On hotter days it raises SPM to avoid oil loss from pump-limitation. The energy reduction is real within the model but optimistic as a field prediction.",
+  "energy_note": "SPM now affects production (min of reservoir inflow and pump capacity). The optimizer chooses SPM=4.0-9.95 (mean 5.32). On 118/180 days it still picks SPM=4.0 \u2014 these are cold high-viscosity days where reservoir inflow is already low and the pump is never the bottleneck at any SPM. On hotter days it raises SPM to avoid oil loss from pump-limitation. The energy reduction is real within the model but optimistic as a field prediction.",
   "spm_diagnostics": {
     "min": 4.0,
-    "max": 5.5,
-    "mean": 4.23,
+    "max": 9.95,
+    "mean": 5.32,
     "unique_values": [
       4.0,
       4.5,
       5.0,
-      5.5
+      5.5,
+      8.37,
+      8.44,
+      8.51,
+      8.53,
+      8.61,
+      8.62,
+      8.66,
+      8.68,
+      8.73,
+      8.77,
+      8.79,
+      8.85,
+      8.89,
+      8.94,
+      8.95,
+      8.96,
+      8.97,
+      8.98,
+      8.99,
+      9.02,
+      9.09,
+      9.1,
+      9.12,
+      9.13,
+      9.15,
+      9.19,
+      9.22,
+      9.25,
+      9.35,
+      9.37,
+      9.39,
+      9.4,
+      9.44,
+      9.5,
+      9.67,
+      9.95
     ],
-    "days_at_minimum_spm": 142,
+    "days_at_minimum_spm": 118,
     "distribution": {
-      "4.0": 142,
-      "4.5": 12,
-      "5.0": 6,
-      "5.5": 20
+      "4.0": 118,
+      "4.5": 1,
+      "5.0": 3,
+      "5.5": 16,
+      "8.37": 1,
+      "8.44": 1,
+      "8.51": 1,
+      "8.53": 2,
+      "8.61": 1,
+      "8.62": 1,
+      "8.66": 1,
+      "8.68": 1,
+      "8.73": 2,
+      "8.77": 1,
+      "8.79": 1,
+      "8.85": 2,
+      "8.89": 1,
+      "8.94": 1,
+      "8.95": 1,
+      "8.96": 2,
+      "8.97": 1,
+      "8.98": 1,
+      "8.99": 1,
+      "9.02": 1,
+      "9.09": 2,
+      "9.1": 1,
+      "9.12": 2,
+      "9.13": 1,
+      "9.15": 1,
+      "9.19": 1,
+      "9.22": 1,
+      "9.25": 1,
+      "9.35": 1,
+      "9.37": 1,
+      "9.39": 1,
+      "9.4": 1,
+      "9.44": 1,
+      "9.5": 1,
+      "9.67": 1,
+      "9.95": 1
     }
+  },
+  "optimizer_settings": {
+    "max_oil_loss_pct": 15.0,
+    "spm_range": [
+      4.0,
+      10.0
+    ],
+    "spm_step": 0.5,
+    "steam_range": [
+      100.0,
+      260.0
+    ],
+    "steam_step": 20.0,
+    "vfd_fixed_hz": 42.0
   },
   "date_range": {
     "start": "2025-01-01",
@@ -41,18 +127,18 @@
   },
   "tejas": {
     "high_risk_days": 0,
-    "medium_risk_days": 92,
-    "low_risk_days": 88,
-    "avg_risk_score": 31.64,
-    "total_oil_bbl": 12592.3,
-    "total_energy_kwh": 7829.6,
+    "medium_risk_days": 94,
+    "low_risk_days": 86,
+    "avg_risk_score": 31.79,
+    "total_oil_bbl": 12593.4,
+    "total_energy_kwh": 9588.1,
     "avg_sor": 0.1493
   },
   "delta_tejas_minus_baseline": {
     "high_risk_days": -26,
-    "avg_risk_score": -8.17,
-    "total_oil_bbl": -1.1,
-    "total_energy_kwh": -7726.4,
+    "avg_risk_score": -8.02,
+    "total_oil_bbl": 0.0,
+    "total_energy_kwh": -5967.9,
     "avg_sor": 0.0
   },
   "daily_baseline": [
@@ -2129,10 +2215,10 @@
     {
       "date": "2025-01-09",
       "css_stage": "production",
-      "spm_used": 5.0,
-      "steam_used": 100.0,
+      "spm_used": 9.22,
+      "steam_used": 180.0,
       "oil_bpd": 171.1,
-      "energy_kwh": 49.4,
+      "energy_kwh": 87.4,
       "sor": 0.259,
       "risk_score": 9.6,
       "risk_label": "Low"
@@ -2140,10 +2226,10 @@
     {
       "date": "2025-01-10",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.02,
+      "steam_used": 180.0,
       "oil_bpd": 160.8,
-      "energy_kwh": 45.0,
+      "energy_kwh": 85.7,
       "sor": 0.229,
       "risk_score": 11.7,
       "risk_label": "Low"
@@ -2162,10 +2248,10 @@
     {
       "date": "2025-01-12",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.09,
+      "steam_used": 180.0,
       "oil_bpd": 139.9,
-      "energy_kwh": 45.2,
+      "energy_kwh": 86.5,
       "sor": 0.188,
       "risk_score": 16.2,
       "risk_label": "Low"
@@ -2173,10 +2259,10 @@
     {
       "date": "2025-01-13",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.96,
+      "steam_used": 180.0,
       "oil_bpd": 127.0,
-      "energy_kwh": 40.8,
+      "energy_kwh": 85.4,
       "sor": 0.174,
       "risk_score": 19.1,
       "risk_label": "Low"
@@ -2184,10 +2270,10 @@
     {
       "date": "2025-01-14",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.85,
+      "steam_used": 180.0,
       "oil_bpd": 117.5,
-      "energy_kwh": 40.8,
+      "energy_kwh": 84.4,
       "sor": 0.163,
       "risk_score": 21.2,
       "risk_label": "Low"
@@ -2195,10 +2281,10 @@
     {
       "date": "2025-01-15",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.99,
+      "steam_used": 180.0,
       "oil_bpd": 111.2,
-      "energy_kwh": 40.8,
+      "energy_kwh": 85.7,
       "sor": 0.155,
       "risk_score": 22.5,
       "risk_label": "Low"
@@ -2206,10 +2292,10 @@
     {
       "date": "2025-01-16",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.39,
+      "steam_used": 180.0,
       "oil_bpd": 103.5,
-      "energy_kwh": 40.9,
+      "energy_kwh": 89.4,
       "sor": 0.146,
       "risk_score": 24.2,
       "risk_label": "Low"
@@ -2217,10 +2303,10 @@
     {
       "date": "2025-01-17",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.95,
+      "steam_used": 180.0,
       "oil_bpd": 96.2,
-      "energy_kwh": 41.0,
+      "energy_kwh": 85.5,
       "sor": 0.14,
       "risk_score": 25.8,
       "risk_label": "Low"
@@ -2745,10 +2831,10 @@
     {
       "date": "2025-03-06",
       "css_stage": "production",
-      "spm_used": 5.0,
-      "steam_used": 100.0,
+      "spm_used": 9.44,
+      "steam_used": 180.0,
       "oil_bpd": 180.2,
-      "energy_kwh": 49.4,
+      "energy_kwh": 89.3,
       "sor": 0.177,
       "risk_score": 7.3,
       "risk_label": "Low"
@@ -2767,10 +2853,10 @@
     {
       "date": "2025-03-08",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
-      "oil_bpd": 163.4,
-      "energy_kwh": 45.0,
+      "spm_used": 9.15,
+      "steam_used": 180.0,
+      "oil_bpd": 163.9,
+      "energy_kwh": 86.8,
       "sor": 0.165,
       "risk_score": 10.5,
       "risk_label": "Low"
@@ -2778,10 +2864,10 @@
     {
       "date": "2025-03-09",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.19,
+      "steam_used": 180.0,
       "oil_bpd": 158.4,
-      "energy_kwh": 45.0,
+      "energy_kwh": 87.2,
       "sor": 0.16,
       "risk_score": 11.6,
       "risk_label": "Low"
@@ -2789,10 +2875,10 @@
     {
       "date": "2025-03-10",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.5,
+      "steam_used": 180.0,
       "oil_bpd": 150.6,
-      "energy_kwh": 45.1,
+      "energy_kwh": 90.1,
       "sor": 0.155,
       "risk_score": 13.2,
       "risk_label": "Low"
@@ -2800,10 +2886,10 @@
     {
       "date": "2025-03-11",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 8.98,
+      "steam_used": 180.0,
       "oil_bpd": 142.6,
-      "energy_kwh": 45.1,
+      "energy_kwh": 85.4,
       "sor": 0.151,
       "risk_score": 14.8,
       "risk_label": "Low"
@@ -2811,10 +2897,10 @@
     {
       "date": "2025-03-12",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
-      "oil_bpd": 133.6,
-      "energy_kwh": 40.7,
+      "spm_used": 8.62,
+      "steam_used": 180.0,
+      "oil_bpd": 134.2,
+      "energy_kwh": 82.3,
       "sor": 0.148,
       "risk_score": 16.6,
       "risk_label": "Low"
@@ -2822,10 +2908,10 @@
     {
       "date": "2025-03-13",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.1,
+      "steam_used": 180.0,
       "oil_bpd": 127.8,
-      "energy_kwh": 40.7,
+      "energy_kwh": 86.6,
       "sor": 0.144,
       "risk_score": 18.0,
       "risk_label": "Low"
@@ -2833,10 +2919,10 @@
     {
       "date": "2025-03-14",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.85,
+      "steam_used": 180.0,
       "oil_bpd": 118.9,
-      "energy_kwh": 40.7,
+      "energy_kwh": 84.4,
       "sor": 0.141,
       "risk_score": 20.0,
       "risk_label": "Low"
@@ -2844,10 +2930,10 @@
     {
       "date": "2025-03-15",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.44,
+      "steam_used": 180.0,
       "oil_bpd": 108.2,
-      "energy_kwh": 40.8,
+      "energy_kwh": 80.8,
       "sor": 0.138,
       "risk_score": 22.5,
       "risk_label": "Low"
@@ -2855,10 +2941,10 @@
     {
       "date": "2025-03-16",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.73,
+      "steam_used": 180.0,
       "oil_bpd": 101.4,
-      "energy_kwh": 40.9,
+      "energy_kwh": 83.4,
       "sor": 0.136,
       "risk_score": 24.0,
       "risk_label": "Low"
@@ -2866,10 +2952,10 @@
     {
       "date": "2025-03-17",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.95,
+      "steam_used": 180.0,
       "oil_bpd": 93.9,
-      "energy_kwh": 41.0,
+      "energy_kwh": 94.5,
       "sor": 0.133,
       "risk_score": 25.8,
       "risk_label": "Low"
@@ -2877,13 +2963,13 @@
     {
       "date": "2025-03-18",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.13,
+      "steam_used": 180.0,
       "oil_bpd": 89.1,
-      "energy_kwh": 41.0,
+      "energy_kwh": 87.5,
       "sor": 0.132,
-      "risk_score": 26.8,
-      "risk_label": "Low"
+      "risk_score": 40.5,
+      "risk_label": "Medium"
     },
     {
       "date": "2025-03-19",
@@ -3317,10 +3403,10 @@
     {
       "date": "2025-04-27",
       "css_stage": "soak",
-      "spm_used": 5.5,
-      "steam_used": 100.0,
+      "spm_used": 8.37,
+      "steam_used": 180.0,
       "oil_bpd": 195.2,
-      "energy_kwh": 53.9,
+      "energy_kwh": 79.7,
       "sor": 0.161,
       "risk_score": 6.9,
       "risk_label": "Low"
@@ -3339,10 +3425,10 @@
     {
       "date": "2025-04-29",
       "css_stage": "soak",
-      "spm_used": 5.5,
-      "steam_used": 100.0,
+      "spm_used": 8.53,
+      "steam_used": 180.0,
       "oil_bpd": 195.8,
-      "energy_kwh": 53.9,
+      "energy_kwh": 81.1,
       "sor": 0.153,
       "risk_score": 6.8,
       "risk_label": "Low"
@@ -3372,10 +3458,10 @@
     {
       "date": "2025-05-02",
       "css_stage": "production",
-      "spm_used": 5.0,
-      "steam_used": 100.0,
+      "spm_used": 8.89,
+      "steam_used": 180.0,
       "oil_bpd": 169.8,
-      "energy_kwh": 49.4,
+      "energy_kwh": 84.4,
       "sor": 0.143,
       "risk_score": 9.5,
       "risk_label": "Low"
@@ -3383,10 +3469,10 @@
     {
       "date": "2025-05-03",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.4,
+      "steam_used": 180.0,
       "oil_bpd": 159.2,
-      "energy_kwh": 45.0,
+      "energy_kwh": 89.1,
       "sor": 0.141,
       "risk_score": 11.6,
       "risk_label": "Low"
@@ -3394,10 +3480,10 @@
     {
       "date": "2025-05-04",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.09,
+      "steam_used": 180.0,
       "oil_bpd": 148.1,
-      "energy_kwh": 45.1,
+      "energy_kwh": 86.4,
       "sor": 0.138,
       "risk_score": 13.9,
       "risk_label": "Low"
@@ -3405,10 +3491,10 @@
     {
       "date": "2025-05-05",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 8.73,
+      "steam_used": 180.0,
       "oil_bpd": 136.2,
-      "energy_kwh": 45.1,
+      "energy_kwh": 83.2,
       "sor": 0.136,
       "risk_score": 16.4,
       "risk_label": "Low"
@@ -3416,10 +3502,10 @@
     {
       "date": "2025-05-06",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.35,
+      "steam_used": 180.0,
       "oil_bpd": 130.7,
-      "energy_kwh": 40.7,
+      "energy_kwh": 88.8,
       "sor": 0.134,
       "risk_score": 17.4,
       "risk_label": "Low"
@@ -3427,10 +3513,10 @@
     {
       "date": "2025-05-07",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.67,
+      "steam_used": 180.0,
       "oil_bpd": 122.5,
-      "energy_kwh": 40.7,
+      "energy_kwh": 91.7,
       "sor": 0.132,
       "risk_score": 19.1,
       "risk_label": "Low"
@@ -3438,10 +3524,10 @@
     {
       "date": "2025-05-08",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 9.12,
+      "steam_used": 180.0,
       "oil_bpd": 115.9,
-      "energy_kwh": 40.8,
+      "energy_kwh": 86.9,
       "sor": 0.13,
       "risk_score": 20.4,
       "risk_label": "Low"
@@ -3449,10 +3535,10 @@
     {
       "date": "2025-05-09",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.51,
+      "steam_used": 180.0,
       "oil_bpd": 108.9,
-      "energy_kwh": 40.8,
+      "energy_kwh": 81.4,
       "sor": 0.128,
       "risk_score": 21.8,
       "risk_label": "Low"
@@ -3460,10 +3546,10 @@
     {
       "date": "2025-05-10",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.96,
+      "steam_used": 180.0,
       "oil_bpd": 103.4,
-      "energy_kwh": 40.9,
+      "energy_kwh": 85.5,
       "sor": 0.126,
       "risk_score": 22.9,
       "risk_label": "Low"
@@ -3471,10 +3557,10 @@
     {
       "date": "2025-05-11",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.97,
+      "steam_used": 180.0,
       "oil_bpd": 94.7,
-      "energy_kwh": 41.0,
+      "energy_kwh": 85.7,
       "sor": 0.125,
       "risk_score": 24.9,
       "risk_label": "Low"
@@ -3779,10 +3865,10 @@
     {
       "date": "2025-06-08",
       "css_stage": "soak",
-      "spm_used": 5.5,
-      "steam_used": 100.0,
+      "spm_used": 9.25,
+      "steam_used": 180.0,
       "oil_bpd": 190.1,
-      "energy_kwh": 53.9,
+      "energy_kwh": 87.6,
       "sor": 0.142,
       "risk_score": 8.1,
       "risk_label": "Low"
@@ -3790,10 +3876,10 @@
     {
       "date": "2025-06-09",
       "css_stage": "soak",
-      "spm_used": 5.5,
-      "steam_used": 100.0,
+      "spm_used": 8.66,
+      "steam_used": 180.0,
       "oil_bpd": 192.8,
-      "energy_kwh": 53.9,
+      "energy_kwh": 82.4,
       "sor": 0.14,
       "risk_score": 7.5,
       "risk_label": "Low"
@@ -3834,10 +3920,10 @@
     {
       "date": "2025-06-13",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.37,
+      "steam_used": 180.0,
       "oil_bpd": 157.6,
-      "energy_kwh": 45.0,
+      "energy_kwh": 88.8,
       "sor": 0.131,
       "risk_score": 9.8,
       "risk_label": "Low"
@@ -3845,10 +3931,10 @@
     {
       "date": "2025-06-14",
       "css_stage": "production",
-      "spm_used": 4.5,
-      "steam_used": 100.0,
+      "spm_used": 9.12,
+      "steam_used": 180.0,
       "oil_bpd": 147.0,
-      "energy_kwh": 45.0,
+      "energy_kwh": 86.6,
       "sor": 0.129,
       "risk_score": 11.6,
       "risk_label": "Low"
@@ -3856,10 +3942,10 @@
     {
       "date": "2025-06-15",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.61,
+      "steam_used": 180.0,
       "oil_bpd": 136.1,
-      "energy_kwh": 40.5,
+      "energy_kwh": 82.0,
       "sor": 0.128,
       "risk_score": 13.7,
       "risk_label": "Low"
@@ -3867,10 +3953,10 @@
     {
       "date": "2025-06-16",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.79,
+      "steam_used": 180.0,
       "oil_bpd": 125.5,
-      "energy_kwh": 40.6,
+      "energy_kwh": 83.7,
       "sor": 0.126,
       "risk_score": 15.7,
       "risk_label": "Low"
@@ -3878,10 +3964,10 @@
     {
       "date": "2025-06-17",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.94,
+      "steam_used": 180.0,
       "oil_bpd": 114.2,
-      "energy_kwh": 40.7,
+      "energy_kwh": 85.2,
       "sor": 0.125,
       "risk_score": 18.1,
       "risk_label": "Low"
@@ -3900,10 +3986,10 @@
     {
       "date": "2025-06-19",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.53,
+      "steam_used": 180.0,
       "oil_bpd": 95.4,
-      "energy_kwh": 40.8,
+      "energy_kwh": 81.6,
       "sor": 0.122,
       "risk_score": 22.0,
       "risk_label": "Low"
@@ -3911,10 +3997,10 @@
     {
       "date": "2025-06-20",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.68,
+      "steam_used": 180.0,
       "oil_bpd": 86.5,
-      "energy_kwh": 40.9,
+      "energy_kwh": 83.0,
       "sor": 0.121,
       "risk_score": 24.0,
       "risk_label": "Low"
@@ -3922,13 +4008,13 @@
     {
       "date": "2025-06-21",
       "css_stage": "production",
-      "spm_used": 4.0,
-      "steam_used": 100.0,
+      "spm_used": 8.77,
+      "steam_used": 180.0,
       "oil_bpd": 76.1,
-      "energy_kwh": 41.0,
+      "energy_kwh": 84.3,
       "sor": 0.12,
-      "risk_score": 26.5,
-      "risk_label": "Low"
+      "risk_score": 38.5,
+      "risk_label": "Medium"
     },
     {
       "date": "2025-06-22",

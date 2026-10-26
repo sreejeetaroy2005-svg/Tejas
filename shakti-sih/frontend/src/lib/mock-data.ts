@@ -16,6 +16,8 @@ import {
   DynacardClassification,
   ForecastResponse,
   BacktestResponse,
+  FleetPriorityResponse,
+  FleetSummaryResponse,
 } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -170,6 +172,7 @@ export const mockOptimizeResponse: OptimizeResponse = {
       spm_excess: 3.2,
       motor_current: 10.0,
     },
+    oil_change_pct: 10.8,
   },
   alternatives_evaluated: 24,
   score_breakdown: {
@@ -179,6 +182,8 @@ export const mockOptimizeResponse: OptimizeResponse = {
     risk_penalty: 0.148,
     composite: 0.913,
   },
+  note_type: null,
+  current_projected_oil_bpd: 110.5,
   explanation:
     "Lowering SPM from 8.8 to 7.5 and VFD from 45.3 Hz to 42 Hz gives the pump " +
     "more time to refill each stroke, raising estimated fillage to ~84% and reducing " +
@@ -343,6 +348,14 @@ export const mockBacktestResponse: BacktestResponse = {
     days_at_minimum_spm: 142,
     distribution: { "4.0": 142, "4.5": 12, "5.0": 6, "5.5": 20 },
   },
+  optimizer_settings: {
+    max_oil_loss_pct: 15.0,
+    spm_range: [4.0, 10.0],
+    spm_step: 0.5,
+    steam_range: [100.0, 260.0],
+    steam_step: 20.0,
+    vfd_fixed_hz: 42.0,
+  },
   baseline: {
     high_risk_days: 26,
     medium_risk_days: 84,
@@ -370,5 +383,62 @@ export const mockBacktestResponse: BacktestResponse = {
   },
   daily_baseline: [],
   daily_tejas: [],
+  data_note: "MOCK DATA — API Unreachable",
+};
+
+// ---------------------------------------------------------------------------
+// Fleet (GET /api/fleet/priority + GET /api/fleet/summary)
+// ---------------------------------------------------------------------------
+const MOCK_WELL_PROFILES: Array<{
+  id: string; risk: "Low" | "Medium" | "High"; urgency: number;
+  oil: number; fillage: number; stage: string; days: number; reason: string;
+  trend: string; condition?: string;
+}> = [
+  { id: "BGW-11", risk: "High",   urgency: 72, oil: 14.6, fillage: 42, stage: "production", days: 22, reason: "Risk 68/100 (High); classifier: Rod Floating; fillage 42% (low).", trend: "declining", condition: "Rod Floating" },
+  { id: "BGW-12", risk: "Medium", urgency: 55, oil: 77.3, fillage: 58, stage: "production", days: 35, reason: "Risk 49/100 (Medium); motor current elevated; fillage 58%.", trend: "declining" },
+  { id: "BGW-05", risk: "Medium", urgency: 48, oil: 0.0,  fillage: 52, stage: "injection",  days: 2,  reason: "Risk 45/100 (Medium); worn pump — fillage cap 65%.", trend: "stable" },
+  { id: "BGW-08", risk: "Medium", urgency: 44, oil: 53.9, fillage: 61, stage: "production", days: 8,  reason: "Risk 41/100 (Medium); classifier: Gas Interference; fillage 61%.", trend: "stable", condition: "Gas Interference" },
+  { id: "BGW-02", risk: "Medium", urgency: 40, oil: 5.0,  fillage: 55, stage: "production", days: 28, reason: "Risk 38/100 (Medium); viscosity up 12% in 3 days; fillage 55%.", trend: "declining" },
+  { id: "BGW-06", risk: "Medium", urgency: 36, oil: 33.1, fillage: 72, stage: "production", days: 5,  reason: "Risk 35/100 (Medium); early cycle, forecast declining.", trend: "declining" },
+  { id: "BGW-10", risk: "Medium", urgency: 33, oil: 9.9,  fillage: 68, stage: "production", days: 3,  reason: "Risk 32/100 (Medium); recently worked-over, monitoring.", trend: "stable" },
+  { id: "BGW-09", risk: "Low",    urgency: 22, oil: 149.7,fillage: 88, stage: "production", days: 15, reason: "Risk 22/100 — monitoring.", trend: "stable" },
+  { id: "BGW-04", risk: "Low",    urgency: 18, oil: 96.7, fillage: 85, stage: "production", days: 12, reason: "Risk 18/100 — monitoring.", trend: "stable" },
+  { id: "BGW-07", risk: "Low",    urgency: 16, oil: 95.2, fillage: 83, stage: "production", days: 45, reason: "Risk 15/100 — monitoring.", trend: "stable" },
+  { id: "BGW-03", risk: "Low",    urgency: 12, oil: 171.8,fillage: 91, stage: "production", days: 5,  reason: "Risk 12/100 — monitoring.", trend: "stable" },
+  { id: "BGW-01", risk: "Low",    urgency: 8,  oil: 110.5,fillage: 72, stage: "production", days: 20, reason: "Risk 8/100 — monitoring.", trend: "stable" },
+];
+
+export const mockFleetPriority: FleetPriorityResponse = {
+  wells: MOCK_WELL_PROFILES.map((w) => ({
+    well_id: w.id,
+    risk_score: w.urgency * 0.9,
+    risk_label: w.risk,
+    urgency_score: w.urgency,
+    css_stage: w.stage,
+    days_since_steam_injection: w.days,
+    oil_bpd: w.oil,
+    estimated_fillage_pct: w.fillage,
+    viscosity_cp: 3000,
+    viscosity_trend_3d_pct: 0,
+    ml_condition: w.condition,
+    ml_confidence: w.condition ? 0.82 : undefined,
+    forecast_trend: w.trend,
+    reason: w.reason,
+  })),
+  total: MOCK_WELL_PROFILES.length,
+  data_note: "MOCK DATA — API Unreachable",
+};
+
+export const mockFleetSummary: FleetSummaryResponse = {
+  total_wells: 12,
+  wells_producing: 10,
+  wells_injecting: 1,
+  wells_soaking: 1,
+  total_oil_bpd: 817.7,
+  total_energy_kwh: 1056.2,
+  avg_risk_score: 32.4,
+  wells_high_risk: 1,
+  wells_medium_risk: 5,
+  wells_low_risk: 6,
   data_note: "MOCK DATA — API Unreachable",
 };

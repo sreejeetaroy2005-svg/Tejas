@@ -257,6 +257,7 @@ def optimise(
     spm_range: tuple[float, float] | None = None,
     vfd_range: tuple[float, float] | None = None,  # kept for API compat; ignored
     steam_range: tuple[float, float] | None = None,
+    max_oil_loss_pct: float = 15.0,
 ) -> dict:
     """Run grid search and return the best operating point.
 
@@ -273,9 +274,18 @@ def optimise(
             cross-check.  Defaults to 4000 if not provided by the caller.
         vfd_range: Accepted for backward API compatibility but ignored
             (VFD is no longer grid-searched — see module docstring).
+        max_oil_loss_pct: Maximum acceptable oil production loss relative to
+            current, as a percentage (0–100).  Candidates whose projected
+            oil_bpd is lower than current_oil_bpd by more than this fraction
+            are excluded before ranking.  Default: 15.0 (allow up to 15% loss).
+            If no candidate meets the constraint, the best within the constraint
+            boundary is returned with a constraint_note explaining this.
+            On injection/soak days where current_oil_bpd == 0 the constraint
+            is not applied (division by zero would be meaningless).
 
     Returns a dict with best_option, alternatives_evaluated, explanation,
-    contributing_factors, ml_diagnosis_warning, and current_ml_condition.
+    contributing_factors, ml_diagnosis_warning, current_ml_condition,
+    oil_constraint_note, and score_breakdown.
     """
     spm_lo, spm_hi = spm_range or DEFAULT_SPM_RANGE
     steam_lo, steam_hi = steam_range or DEFAULT_STEAM_RANGE
@@ -304,6 +314,14 @@ def optimise(
                 energy_kwh=projected["energy_kwh"],
                 risk_score=projected["risk_score"],
             )
+            # Oil change vs current (pct, signed: negative = loss)
+            if current_oil_bpd > 0:
+                oil_change_pct = round(
+                    (projected["oil_bpd"] - current_oil_bpd) / current_oil_bpd * 100, 2
+                )
+            else:
+                oil_change_pct = 0.0  # injection/soak — no meaningful comparison
+
             candidates.append({
                 "spm": round(spm_val, 2),
                 "vfd_frequency_hz": round(vfd_val, 2),
@@ -316,16 +334,153 @@ def optimise(
                 "risk_source": "rule_based_projection",
                 "composite_score": score,
                 "contributing_factors": projected["risk_factors"],
+                "oil_change_pct": oil_change_pct,
+                "is_current_settings": False,
             })
             steam_val += DEFAULT_STEAM_STEP
         spm_val += DEFAULT_SPM_STEP
 
+    # ---------------------------------------------------------------------------
+    # Add "keep current settings" as an explicit candidate.
+    #
+    # Why: the grid may not contain exactly current_spm (it could fall between
+    # grid points), and there should always be a known-safe fallback that beats
+    # every other option when both the oil cap and the risk guard disqualify the
+    # grid winners.  The current steam is approximated as the mid-range value
+    # (the optimizer has no access to the actual steam injected today — it only
+    # knows the current SPM and risk score).
+    #
+    # IMPORTANT: the current-settings candidate establishes the OIL BASELINE.
+    # All oil_change_pct values (for every candidate, including grid candidates)
+    # are computed relative to _current_proj["oil_bpd"] — the simulator's own
+    # projection at current settings — NOT relative to current_oil_bpd (the
+    # recorded CSV value).  This ensures the current-settings candidate shows
+    # exactly 0.0% and comparisons are internally consistent.
+    # ---------------------------------------------------------------------------
+    _current_steam_approx = round((steam_lo + steam_hi) / 2.0, 1)
+    _current_proj = simulate_next_day(
+        current_temp_c=current_temp_c,
+        css_stage=css_stage,
+        cycle_prod_progress=cycle_prod_progress,
+        spm=current_spm,
+        vfd_hz=vfd_val,
+        current_sor=current_sor,
+        steam_volume_tonnes=_current_steam_approx,
+    )
+    # This is the simulator's baseline oil for all pct comparisons.
+    _oil_baseline = _current_proj["oil_bpd"]  # always > 0 if simulation succeeds
+
+    # ---------------------------------------------------------------------------
+    # Re-compute oil_change_pct for grid candidates using the simulator baseline.
+    # (We couldn't do this earlier because _current_proj wasn't available yet.)
+    # ---------------------------------------------------------------------------
+    if _oil_baseline > 0:
+        for c in candidates:
+            c["oil_change_pct"] = round(
+                (c["projected_oil_bpd"] - _oil_baseline) / _oil_baseline * 100, 2
+            )
+    # else: injection/soak — all remain 0.0 as set during construction
+
+    _current_score = composite_score(
+        oil_bpd=_current_proj["oil_bpd"],
+        sor=_current_proj["sor"],
+        energy_kwh=_current_proj["energy_kwh"],
+        risk_score=_current_proj["risk_score"],
+    )
+    _current_candidate = {
+        "spm": round(current_spm, 2),
+        "vfd_frequency_hz": round(vfd_val, 2),
+        "steam_volume_tonnes": _current_steam_approx,
+        "projected_oil_bpd": _current_proj["oil_bpd"],
+        "projected_energy_kwh": _current_proj["energy_kwh"],
+        "projected_sor": _current_proj["sor"],
+        "risk_score": _current_proj["risk_score"],
+        "risk_label": _current_proj["risk_label"],
+        "risk_source": "rule_based_projection",
+        "composite_score": _current_score,
+        "contributing_factors": _current_proj["risk_factors"],
+        "oil_change_pct": 0.0,  # by definition — this IS the baseline
+        "is_current_settings": True,
+    }
+    candidates.append(_current_candidate)
+
     if not candidates:
         return {"error": "No valid candidates found."}
 
-    # Sort by composite score descending
-    candidates.sort(key=lambda c: c["composite_score"], reverse=True)
-    best = candidates[0]
+    # ---------------------------------------------------------------------------
+    # Oil-loss constraint filter
+    # ---------------------------------------------------------------------------
+    # Only apply when the well is producing (_oil_baseline > 0); on
+    # injection/soak days the constraint is meaningless and skipped.
+    oil_constraint_note: str | None = None
+    oil_constraint_active = False
+    note_type: str | None = None  # "oil_cap" | "risk_guard" | None
+
+    if _oil_baseline > 0 and max_oil_loss_pct < 100.0:
+        # Current-settings candidate always passes the oil cap (oil_change_pct == 0.0)
+        qualifying = [
+            c for c in candidates
+            if c["oil_change_pct"] >= -max_oil_loss_pct
+        ]
+        if qualifying:
+            ranked = sorted(qualifying, key=lambda c: c["composite_score"], reverse=True)
+            best = ranked[0]
+            oil_constraint_active = len(qualifying) < len(candidates)
+            if oil_constraint_active:
+                note_type = "oil_cap"
+                n_excluded = len(candidates) - len(qualifying)
+                oil_constraint_note = (
+                    f"{n_excluded} of {len(candidates)} candidates excluded because "
+                    f"their projected oil was more than {max_oil_loss_pct:.0f}% below "
+                    f"the model baseline ({_oil_baseline:.1f} bbl/day at current settings).  "
+                    f"Best qualifying option: SPM {best['spm']:.1f}, "
+                    f"oil {best['projected_oil_bpd']:.1f} bbl/day "
+                    f"({best['oil_change_pct']:+.1f}% vs baseline)."
+                )
+        else:
+            # This branch is unreachable in practice because the current-settings
+            # candidate always qualifies (its oil_change_pct == 0.0 >= -max_pct).
+            # Guard it anyway for robustness.
+            ranked_all = sorted(candidates, key=lambda c: c["oil_change_pct"], reverse=True)
+            best = ranked_all[0]
+            note_type = "oil_cap"
+            oil_constraint_note = (
+                f"No candidate kept oil within the {max_oil_loss_pct:.0f}% loss limit "
+                f"(model baseline: {_oil_baseline:.1f} bbl/day at current settings).  "
+                f"All {len(candidates)} candidates fall below the threshold.  "
+                f"Showing the option with the smallest oil reduction: "
+                f"SPM {best['spm']:.1f}, "
+                f"oil {best['projected_oil_bpd']:.1f} bbl/day "
+                f"({best['oil_change_pct']:+.1f}% vs baseline).  "
+                f"Consider raising the max_oil_loss_pct constraint or reviewing "
+                f"the SPM/steam search ranges."
+            )
+            oil_constraint_active = True
+    else:
+        # Constraint disabled (injection/soak stage, or threshold=100%)
+        candidates.sort(key=lambda c: c["composite_score"], reverse=True)
+        best = candidates[0]
+
+    # ---------------------------------------------------------------------------
+    # Risk guard
+    # ---------------------------------------------------------------------------
+    risk_guard_note: str | None = None
+    if best["risk_score"] > current_risk_score + 0.5:
+        # Check whether the current-settings candidate is available and qualifies
+        if _current_candidate["oil_change_pct"] >= -(_oil_baseline > 0 and max_oil_loss_pct or 100):
+            note_type = "risk_guard"
+            risk_guard_note = (
+                f"⚠ Risk guard: the highest-scoring candidate (SPM {best['spm']:.1f}) "
+                f"projects a risk score of {best['risk_score']:.1f} "
+                f"({best['risk_label']}), which is higher than the current "
+                f"rule-based risk ({current_risk_score:.1f}).  "
+                f"Returning 'keep current settings' (SPM {_current_candidate['spm']:.1f}, "
+                f"risk {_current_candidate['risk_score']:.1f}) instead.  "
+                f"Review operating conditions before changing pump speed."
+            )
+            best = _current_candidate
+            oil_constraint_active = True  # flag so UI shows the note
+            oil_constraint_note = (oil_constraint_note + "  " if oil_constraint_note else "") + risk_guard_note
 
     explanation = _build_explanation(
         best=best,
@@ -359,6 +514,10 @@ def optimise(
         "explanation": explanation,
         "ml_diagnosis_warning": ml_warning,
         "current_ml_condition": ml_condition,
+        "oil_constraint_note": oil_constraint_note,
+        "oil_constraint_active": oil_constraint_active,
+        "note_type": note_type,
+        "current_projected_oil_bpd": round(_oil_baseline, 1),
         "score_breakdown": {
             "production_score": prod_factor,
             "sor_penalty": round(W_SOR * sor_factor, 4),

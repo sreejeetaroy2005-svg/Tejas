@@ -1,10 +1,14 @@
 # Tejas — Decision-Support Digital Twin for Heavy-Oil Wells
 
-> **One line:** Tejas turns a heavy-oil well's daily operating data into actionable recommendations — when to inject steam, how fast to pump, and whether the pump is developing a fault — before a human operator would catch it.
+> **One line:** Tejas watches a 12-well heavy-oil fleet, predicts pump faults before they cause downtime, and recommends the next safe operating point — with every number explained and every assumption labelled synthetic.
 
-**This is a demonstration prototype using fully synthetic data.** It is not connected to real Oil India field systems and does not perform autonomous control. Every API response carries an explicit `data_note` disclaimer.
+**Demonstration prototype — fully synthetic data.** Not connected to real Oil India field systems. Does not perform autonomous control. Every API response carries an explicit `data_note` disclaimer.
 
-![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi) ![Frontend](https://img.shields.io/badge/Frontend-Next.js%2016-black?logo=next.js) ![ML](https://img.shields.io/badge/ML-XGBoost%20%7C%20RandomForest-orange) ![Tests](https://img.shields.io/badge/Tests-116%20passing-brightgreen)
+![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi)
+![Frontend](https://img.shields.io/badge/Frontend-Next.js%2016-black?logo=next.js)
+![ML](https://img.shields.io/badge/ML-XGBoost%20%7C%20RandomForest-orange)
+![Tests](https://img.shields.io/badge/Tests-212%20passing-brightgreen)
+![Wells](https://img.shields.io/badge/Fleet-12%20wells-blue)
 
 ---
 
@@ -12,10 +16,10 @@
 
 | | |
 |---|---|
-| **Problem** | BGW-01 is a heavy-oil well under Cyclic Steam Stimulation (CSS). Oil viscosity swings 50× as the reservoir heats and cools. Operators hand-tune pump speed and steam volume across three phases — inject, soak, produce — with no decision support. Pump faults go undetected until damage is done. |
-| **Solution** | A digital twin that ingests daily well data, forecasts 7-day production and temperature, scores pump-fault risk in real time, recommends the best next operating point, and classifies dynamometer cards into four pump conditions with an ML model. |
-| **What's different** | Every recommendation comes with a plain-English explanation ("reduce SPM — fillage deficit is the largest risk driver") and a confidence score. Where the ML classifier and rule-based risk engine disagree, the system surfaces a structured mismatch warning instead of silently picking one signal. |
-| **Why trust it** | Classifier evaluated with 5-fold stratified CV. Forecast error bars (MAE) shown on every chart. Stale numbers in this README were caught and corrected — see the list at the bottom. |
+| **Problem** | Heavy-oil CSS wells need constant hand-tuning across three phases — inject, soak, produce. Oil viscosity swings 50× as the reservoir heats and cools. Pump faults show up days late. No fleet-level view exists. |
+| **Solution** | A digital twin that monitors 12 wells simultaneously, forecasts 7-day production per well, scores pump-fault risk in real time, recommends the next safe operating point with an oil-loss guard, and classifies dynamometer card shapes into four pump conditions. |
+| **What's different** | Three layers of honesty built in: the optimizer enforces a configurable oil-loss cap so recommendations can't sacrifice production for risk; the ML classifier and rule-based risk engine surface disagreements instead of hiding them; every metric comes with a labelled source ("recorded today" vs "model projection"). |
+| **Why trust it** | 212 tests across 9 files. Classifier evaluated with 5-fold stratified CV (not one lucky split). Backtest records the exact optimizer settings used. Two prior leakage bugs were caught, documented, and fixed — the commit history shows the reasoning. |
 
 ---
 
@@ -24,9 +28,9 @@
 | | |
 |---|---|
 | 🖥️ Live demo | https://tejas-navy.vercel.app/ |
-| 🎥 Video | https://youtu.be/V4qazCjrN8g |
+| 🎥 Video walkthrough | https://youtu.be/V4qazCjrN8g |
 
-| Dashboard Overview | Forecast |
+| Fleet Overview | Well Detail — Overview |
 |---|---|
 | ![Dashboard Overview](shakti-sih/docs/overview.png) | ![Forecast](shakti-sih/docs/forecast.png) |
 
@@ -38,27 +42,27 @@
 
 ## The Problem in Plain English
 
-A sucker-rod pump (SRP) lifts oil from the bottom of a well. A **dynamometer card** is a load-vs-position trace of the pump rod — its shape reveals what's happening underground. Four conditions matter:
+A sucker-rod pump (SRP) lifts oil from the bottom of a well. A **dynamometer card** — a load-vs-position trace of the pump rod — reveals what is happening underground without pulling the pump. Four conditions matter:
 
-- **Normal** — pump is working correctly.
-- **Fluid Pound** — the pump barrel isn't full; the plunger slams into liquid mid-stroke, causing shock loads.
-- **Rod Floating** — the rod string floats on fluid because pump speed is too low or fluid level is too high.
-- **Gas Interference** — gas in the barrel compresses before liquid is picked up, rounding the card shape and reducing efficiency.
+- **Normal** — pump is filling correctly on each stroke.
+- **Fluid Pound** — the barrel isn't full; the plunger slams into liquid mid-stroke (shock load, equipment damage).
+- **Rod Floating** — the rod string floats on fluid; pump speed is too high or fluid level too low.
+- **Gas Interference** — gas compresses in the barrel before liquid is picked up, reducing efficiency and rounding the card shape.
 
-In a heavy-oil CSS well, oil viscosity changes dramatically as the reservoir heats and cools. A pump speed that was correct after steam injection may cause rod floating two weeks later as the well cools down. Operators currently detect this by eye, after the fact.
+In a CSS well, viscosity changes dramatically as the reservoir heats and cools. A pump speed that was safe after injection may cause rod floating two weeks into production. Operators currently catch this by eye, after the fact. Tejas catches it earlier.
 
 ```mermaid
 flowchart LR
-    A[🛢️ Heavy-oil well\nBGW-01] --> B{Operator\nneeds to decide}
-    B --> C[When to inject\nsteam and how much?]
-    B --> D[What SPM to set\non the pump?]
-    B --> E[Is the pump\nworking correctly?]
-    C --> F[Tejas Optimizer\n117-candidate grid search\nSPM × steam volume]
-    D --> F
-    E --> G[Tejas Classifier\nRandomForest on\n16 curve features]
-    F --> H[✅ Ranked recommendation\nwith plain-English explanation\n+ mismatch warning if signals disagree]
-    G --> H
-    H --> I[Operator makes a\nbetter-informed decision\nin less time]
+    A[🛢️ 12-well fleet\nBGW-01…BGW-12] --> B{What does the\noperator need?}
+    B --> C[Which well needs\nattention first?]
+    B --> D[What SPM to set\nwithout losing oil?]
+    B --> E[Is the pump\ndeveloping a fault?]
+    C --> F[Fleet Priority\nurgency score per well\nrisk + viscosity trend\n+ ML condition]
+    D --> G[Optimizer\n118-candidate grid search\noil-loss cap enforced]
+    E --> H[Dynacard Classifier\nRandomForest · 16 features\n5-fold CV · 83.3% accuracy]
+    F --> I[✅ Ranked list with\none-line reason per well]
+    G --> J[✅ Recommendation +\nexplanation + constraint note]
+    H --> K[✅ Condition label +\nconfidence + GI probability]
 ```
 
 ---
@@ -68,52 +72,42 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph FE["Frontend  ·  Next.js 16 / TypeScript / Recharts"]
-        P1[Dashboard] --> P2[Production &\nForecast]
-        P1 --> P3[SRP & Dynacards]
-        P1 --> P4[What-If Simulator]
-        P1 --> P5[Optimizer]
+        P0[Fleet View\n12-well priority table\n+ sparklines]
+        P1[Well Detail\nOverview · Production\nSRP · Optimize · What-If]
+        P0 -->|click well| P1
     end
 
-    subgraph API["FastAPI  ·  Python  ·  8 endpoints"]
-        R1["GET /api/wells\nGET /api/wells/{id}\nGET /api/wells/{id}/history"]
-        R2["GET /api/wells/{id}/forecast"]
-        R3["POST /api/simulate"]
-        R4["POST /api/optimize/{id}"]
-        R5["GET /api/dynacards/examples\nPOST /api/dynacards/classify"]
+    subgraph API["FastAPI  ·  Python  ·  10 endpoints"]
+        R1["GET /api/wells  /api/wells/{id}\n/api/wells/{id}/history  /forecast"]
+        R2["POST /api/simulate  /api/optimize/{id}"]
+        R3["GET /api/fleet/priority  /api/fleet/summary"]
+        R4["GET /api/dynacards/examples\nPOST /api/dynacards/classify"]
+        R5["GET /api/backtest"]
     end
 
     subgraph Svc["Services"]
-        S1[data_service]
-        S2[forecast_service\nXGBoost recursive]
-        S3[simulator\ndeterministic physics]
-        S4[risk_engine\nrule-based formula]
-        S5[optimizer\ngrid search]
-        S6[dynacard_service\nRandomForest]
+        S1[data_service · CSV + Supabase]
+        S2[forecast_service · XGBoost]
+        S3[simulator · deterministic physics]
+        S4[risk_engine · rule-based]
+        S5[optimizer · grid search + oil-loss cap]
+        S6[dynacard_service · RandomForest]
+        S7[fleet router · urgency ranking]
     end
 
-    subgraph Mdl["Trained Models  ·  /models/"]
-        M1[temperature_model.pkl]
-        M2[production_model.pkl]
-        M3[dynacard_classifier.pkl]
-    end
-
-    subgraph Dat["Data  ·  /data/"]
-        D1[bgw_01_daily.csv\n180 rows · 25 cols · 4 CSS cycles]
-        D2[dynacards_synthetic_v1.csv\n800 cards · 4 classes · 200 each]
+    subgraph Data["Data  ·  /data/"]
+        D1[bgw_01_daily.csv · 180 rows]
+        D2[fleet_daily.csv · 1 980 rows · 11 wells]
+        D3[dynacards_synthetic_v1.csv · 800 cards]
     end
 
     FE --> API
-    R1 --> S1 --> D1
-    R2 --> S2 --> M1 & M2
-    R3 --> S3 --> S4
-    R4 --> S5 --> S3
-    R5 --> S6 --> M3
-    M3 -.trained from.-> D2
+    API --> Svc --> Data
 ```
 
 ---
 
-## Optimizer Sequence
+## Optimizer Sequence (with oil-loss cap)
 
 ```mermaid
 sequenceDiagram
@@ -121,27 +115,22 @@ sequenceDiagram
     participant FE as Frontend
     participant API as POST /api/optimize/{id}
     participant Sim as Simulator
-    participant Risk as Risk Engine
-    participant ML as Dynacard Classifier
+    participant Guard as Oil-Loss Cap + Risk Guard
 
-    Op->>FE: Click "Optimize"
-    FE->>API: POST (optional SPM / steam constraints)
-    loop 117 candidates  (13 SPM values × 9 steam values)
-        API->>Sim: simulate_next_day(spm, steam, current_state)
-        Sim-->>API: {oil_bpd, sor, energy_kwh, fillage, …}
-        API->>Risk: compute_risk_score(fillage, viscosity, spm, current_a)
-        Risk-->>API: risk_score [0–100]
-        API->>API: composite = oil_score − 0.35·SOR − 0.25·energy − 0.50·risk
+    Op->>FE: Adjust slider (max oil loss = 15%)
+    FE->>API: POST {max_oil_loss_pct: 15}
+    note over API: Also adds "keep current settings"\nas explicit candidate #118
+    loop 118 candidates (117 grid + current settings)
+        API->>Sim: simulate_next_day(spm, steam)
+        Sim-->>API: {oil_bpd, risk_score, energy_kwh, …}
+        API->>API: oil_change_pct vs simulator baseline
     end
-    API->>API: select candidate with highest composite score
-    API->>ML: classify current well state via nearest-neighbour card
-    ML-->>API: condition + confidence + gi_probability
-    alt ML says fault, rule-based says safe (or vice versa)
-        API-->>FE: best_option + ⚠ ml_diagnosis_warning
-    else Both agree
-        API-->>FE: best_option
-    end
-    FE->>Op: Recommendation with plain-English explanation
+    API->>Guard: filter candidates where oil_change_pct < −15%
+    Guard-->>API: qualifying set (current settings always qualifies)
+    API->>Guard: risk guard — best must not have higher risk than current
+    Guard-->>API: promoted candidate if needed
+    API-->>FE: best_option + note_type + oil_constraint_note\n+ current_projected_oil_bpd
+    FE->>Op: Recommendation card with constraint badge
 ```
 
 ---
@@ -150,40 +139,43 @@ sequenceDiagram
 
 | Feature | Detail |
 |---|---|
-| **7-day recursive forecast** | Two XGBoost regressors (temperature + production) roll forward day-by-day, feeding their own output as the next lag input. MAE error bars displayed on every chart. |
-| **What-if simulator** | Override SPM (4–10), steam volume (100–260 t), soak days (3–6), or VFD (30–50 Hz). Deterministic physics projection runs in < 1 ms — no ML involved. |
-| **Grid-search optimizer** | 117 candidates (13 SPM × 9 steam values). Composite objective: `production − 0.35·SOR − 0.25·energy − 0.50·risk`. Returns best option with explanation and top alternatives. |
-| **Cycle-level planner** | Separate CSS cycle optimizer: grid-searches steam volume, injection pressure (1200–1600 psi), and soak duration (3–6 days). Simulates full inject→soak→production arc to a cutoff trigger (oil < 15 bpd AND trailing SOR > 0.35). |
-| **Pump-fault classifier** | RandomForest on 16 features from the 200-point dynamometer card curve. 5-fold stratified CV: 83.3% accuracy, 83.1% macro-F1. |
-| **Gas Interference confidence gate** | If the model predicts Gas Interference with < 50% probability, the API returns `"Gas Interference (low confidence)"` rather than suppressing the signal. Raw GI probability is always included. |
-| **ML × rule-based cross-check** | After the optimizer picks its best candidate, it runs the classifier on the current well state. If both signals disagree at high confidence, a structured warning appears in the response — not a silent override. |
-| **Transparent risk engine** | 4-factor weighted formula. Every response breaks the score into its four additive components so operators can see what's driving it. |
+| **Fleet view — 12 wells** | Urgency-ranked priority table with sortable columns, per-well sparklines, and one-line reason built from real measured values (risk score, viscosity trend, ML condition). Clicking a row opens the single-well detail view. |
+| **7-day recursive forecast** | Two XGBoost regressors (temperature + production) roll forward day-by-day, each day's output feeding as lag into the next. MAE error bars on every chart. |
+| **What-if simulator** | Override SPM (4–10), steam (100–260 t), soak days (3–6), or VFD (30–50 Hz). Deterministic physics — no ML, runs in < 1 ms. |
+| **Grid-search optimizer + oil-loss cap** | 118 candidates (117 grid + current settings). Composite objective: `production − 0.35·SOR − 0.25·energy − 0.50·risk`. A configurable `max_oil_loss_pct` (default 15%) filters out any candidate that projects more than that loss vs the model's own baseline. Current settings is always a valid fallback. |
+| **Risk guard** | If the highest-scoring candidate projects higher risk than the current settings, the optimizer automatically promotes "keep current settings" and surfaces a labelled `note_type: "risk_guard"` warning. |
+| **Oil baseline consistency** | `oil_change_pct` is computed relative to the simulator's projection at current settings (`current_projected_oil_bpd`), not the noisy CSV value. The Overview card shows both "recorded today" and "model projection" with an amber calibration warning if they differ by > 25%. |
+| **Pump-fault classifier** | RandomForest on 16 features extracted from the 200-point dynamometer card curve. 5-fold stratified CV: 83.3% accuracy, 83.1% macro-F1. Gas Interference recall: 69.6% at low severity → 100% at high severity (gradient confirmed). |
+| **Gas Interference confidence gate** | GI predictions below 50% confidence return `"Gas Interference (low confidence)"`. Raw GI probability always present in the response for dashboards. |
+| **ML × rule-based cross-check** | After selecting the best candidate, the optimizer runs the classifier on the current observed well state. Disagreements appear as a structured `ml_diagnosis_warning` — never silently discarded. |
+| **Transparent risk engine** | 4-factor weighted formula (fillage 35%, viscosity 30%, SPM excess 20%, motor current 15%). Every response breaks the score into additive components. |
+| **Backtest** | 180-day replay of BGW-01 comparing Tejas recommendations against the recorded baseline. Both arms use the same simulator. Stored in `data/backtest_results.json` with all optimizer settings recorded so results are reproducible. |
 
 ---
 
 ## ML Metrics
 
-All numbers come directly from the model metadata files in `backend/models/`.
+All numbers are read directly from `backend/models/*.json` at runtime — no manual transcription.
 
-### Dynacard Classifier  (RandomForest · 5-fold stratified CV)
+### Dynacard Classifier  (RandomForest · 5-fold stratified CV · 800 synthetic cards)
 
 | Metric | Value |
 |---|---|
 | Overall accuracy | **83.3%** ± 2.9% |
 | Macro-F1 | **83.1%** ± 3.1% |
-| GI precision | 88.9% ± 3.8% |
-| GI recall | 90.0% ± 2.7% |
-| Training set | 800 synthetic cards · 200 per class |
+| Gas Interference precision | 88.9% ± 3.8% |
+| Gas Interference recall | 90.0% ± 2.7% |
+| Training set | 800 cards · 200 per class · severity-continuous generator |
 
-**Gas Interference by severity — the gradient should exist (flat 100% would signal overfitting):**
+**Gas Interference recall by severity — gradient confirms no overfitting:**
 
-| Severity tercile | n | Recall | F1 |
-|---|---|---|---|
-| Low (0.10–0.27) | 56 | **69.6%** | 0.821 |
-| Mid (0.27–0.38) | 42 | 92.9% | 0.963 |
-| High (0.39–0.70) | 102 | 100.0% | 1.000 |
+| Tercile | n | Recall | F1 | Interpretation |
+|---|---|---|---|---|
+| Low (0.10–0.27) | 56 | **69.6%** | 0.821 | Mild GI overlaps Normal — expected |
+| Mid (0.27–0.38) | 42 | 92.9% | 0.963 | Clear signal |
+| High (0.39–0.70) | 102 | 100.0% | 1.000 | Unambiguous |
 
-**Top features by importance:** `load_pickup_pos` (26.8%), `enclosed_area` (16.3%), `top_curvature` (15.6%). All three are derived from the raw curve at inference time — no generator-internal columns are used (removing a previous target-leakage bug).
+**Top features:** `load_pickup_pos` 26.8% · `enclosed_area` 16.3% · `top_curvature` 15.6%. All computed from raw curve arrays at inference — no generator-internal columns (a previous target-leakage bug was caught and fixed).
 
 ### Forecast Models  (XGBoost · time-based split — last 25 of 180 rows as test)
 
@@ -192,18 +184,37 @@ All numbers come directly from the model metadata files in `backend/models/`.
 | Reservoir temperature | **1.53 °C** | 0.961 |
 | Oil production | **8.81 bbl/day** | 0.942 |
 
-> These numbers look strong because the physics are deterministic and the model learns the governing equations. They do not represent real-world generalisation to heterogeneous reservoirs.
+> R² looks strong because the physics are deterministic and the model learns the governing equations. Not evidence of real-world generalisation.
+
+---
+
+## Backtest Results
+
+180-day replay comparing Tejas recommendations against the recorded baseline.
+Both arms are evaluated by the same simulator — any improvement is within-model.
+Settings used: `max_oil_loss_pct=15`, SPM range 4.0–10.0 step 0.5, steam 100–260 t step 20.
+
+| Metric | Baseline | Tejas | Delta | Note |
+|---|---|---|---|---|
+| High-risk days | 26 | **0** | −26 ↓ | Real within-model |
+| Avg risk score | 39.81 | **31.79** | −8.02 ↓ | Real within-model |
+| Total oil (bbl) | 12,593.4 | **12,593.4** | 0.0 = | Oil protected by cap |
+| Total energy (kWh) | 15,556 | **9,588** | −5,968 ↓ | Optimistic — model artifact |
+| Avg SOR | 0.149 | **0.149** | 0.0 = | Not pump-sensitive |
+
+**Important caveats:**
+- The optimizer uses the same simulator to score candidates — it cannot appear worse on simulated metrics.
+- The energy saving (−38%) comes from lower recommended SPM. In the simulator, oil production is the minimum of reservoir inflow and pump capacity; on cold high-viscosity days the reservoir is limiting and SPM can drop without losing oil. This is mechanically correct in the model but optimistic as a field prediction.
+- The oil delta is exactly 0.0 because `oil_change_pct` is now measured against the simulator's own baseline (not the noisy CSV value), making the current-settings candidate always the exact reference point.
 
 ---
 
 ## Risk Score Formula
 
-Transparent rule-based scoring — not a black box:
-
 ```
 risk = 0.35 × fillage_component       (how empty the pump barrel is)
      + 0.30 × viscosity_component     (how thick the oil is)
-     + 0.20 × spm_excess_component    (pump running too fast for thick oil)
+     + 0.20 × spm_excess_component    (pump too fast for current viscosity)
      + 0.15 × motor_current_component (motor straining above 35 A)
 ```
 
@@ -213,22 +224,27 @@ risk = 0.35 × fillage_component       (how empty the pump barrel is)
 | 🟡 Medium | 36–65 |
 | 🔴 High | > 65 |
 
+Weights are demo assumptions — not calibrated from real failure data.
+
 ---
 
 ## API Reference
 
 | Method | Path | What it does |
 |---|---|---|
-| `GET` | `/api/wells` | List all wells with status, risk score, and ML condition |
+| `GET` | `/api/wells` | All 12 wells — status, risk score, ML condition |
 | `GET` | `/api/wells/{id}` | Single well full status |
-| `GET` | `/api/wells/{id}/history?days=90` | Daily records for last N days |
-| `GET` | `/api/wells/{id}/forecast?days=7` | 7-day recursive XGBoost forecast with MAE |
-| `POST` | `/api/simulate` | What-if: override SPM / steam / soak / VFD |
-| `POST` | `/api/optimize/{id}` | Grid-search best operating point |
-| `GET` | `/api/dynacards/examples` | One example card per condition label |
+| `GET` | `/api/wells/{id}/history?days=90` | Daily records |
+| `GET` | `/api/wells/{id}/forecast?days=7` | 7-day XGBoost forecast with MAE |
+| `POST` | `/api/simulate` | What-if projection |
+| `POST` | `/api/optimize/{id}` | Grid-search + oil-loss cap + risk guard |
+| `GET` | `/api/fleet/priority` | Wells ranked by urgency with one-line reasons |
+| `GET` | `/api/fleet/summary` | Fleet totals — oil, energy, risk distribution |
+| `GET` | `/api/dynacards/examples` | One example card per condition |
 | `POST` | `/api/dynacards/classify` | Classify a 200-point dynamometer card |
+| `GET` | `/api/backtest` | Pre-computed 180-day backtest results |
 
-Interactive docs at `http://localhost:8000/docs`.
+Interactive docs: `http://localhost:8000/docs`
 
 ---
 
@@ -237,25 +253,18 @@ Interactive docs at `http://localhost:8000/docs`.
 ### Prerequisites
 
 - Python 3.11+, Node.js 20+
-- Copy `backend/.env.example` → `backend/.env` and fill in two values:
 
+```bash
+# Copy env file and add optional Supabase creds (app works without them)
+cp shakti-sih/backend/.env.example shakti-sih/backend/.env
 ```
-SUPABASE_URL=your_project_url
-SUPABASE_SECRET_KEY=your_secret_key
-```
-
-> The API works without Supabase — it reads local CSV files. The env vars are only needed if you use the optional Supabase persistence layer.
 
 ### Backend
 
 ```bash
 cd shakti-sih/backend
-
 python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS / Linux:
-source venv/bin/activate
+source venv/bin/activate          # Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
 
@@ -263,7 +272,15 @@ pip install -r requirements.txt
 python scripts/train_forecast_model.py
 python scripts/train_dynacard_classifier.py
 
+# Generate fleet data for BGW-02..BGW-12
+python scripts/generate_fleet.py
+
+# Optional: regenerate backtest results
+python scripts/backtest.py
+
 uvicorn app.main:app --reload --port 8000
+# → API at http://localhost:8000
+# → Swagger at http://localhost:8000/docs
 ```
 
 ### Frontend
@@ -272,7 +289,7 @@ uvicorn app.main:app --reload --port 8000
 cd shakti-sih/frontend
 npm install
 npm run dev
-# Open http://localhost:3000/dashboard
+# → http://localhost:3000/dashboard/fleet
 ```
 
 ### Tests
@@ -280,33 +297,24 @@ npm run dev
 ```bash
 cd shakti-sih/backend
 pytest tests/ -v
-# 116 tests across 8 test files
-```
-
-### Regenerate synthetic data (optional)
-
-```bash
-# Regenerate dynacard training set (800 cards, 200 per class, severity-continuous)
-python scripts/generate_dynacards.py --n-per-class 200 --seed 42
-python scripts/train_dynacard_classifier.py
+# 212 tests across 9 test files
 ```
 
 ---
 
 ## Limitations
 
-Real weaknesses, stated plainly — judges reward honesty more than spin.
-
 | Limitation | Detail |
 |---|---|
-| **All data is synthetic** | `bgw_01_daily.csv` is 180 rows from a physics model, not real Oil India measurements. Every API response carries a `data_note` field saying so. |
-| **Single well** | Built around BGW-01. Multi-well support needs schema and routing changes. |
-| **Forecast test set is thin** | 25 rows from one synthetic time series. The R² values reflect learning deterministic equations, not generalisation to real reservoir heterogeneity. |
-| **Low-severity GI recall is 69.6%** | Mild Gas Interference (early-stage, subtle gas entry) overlaps Normal by design. These cases are flagged as "low confidence" rather than silently classified. |
-| **Optimizer uses a rule-based risk proxy** | The optimizer scores hypothetical SPM/steam candidates with the rule-based formula — there is no real dynacard for a setting that hasn't been applied yet. The two signals are explicitly tagged and cross-checked. |
-| **VFD is not grid-searched** | In the synthetic data, VFD varies only 38.5–45.7 Hz with near-zero correlation to motor current (r = 0.008). The optimizer holds VFD fixed at 42 Hz. Real VFD optimisation needs better data. |
-| **Risk weights are demo assumptions** | The 0.35 / 0.30 / 0.20 / 0.15 weights are not calibrated from real failure data. |
-| **No authentication** | The API has no auth layer. Demo only. |
+| **All data is synthetic** | Every CSV was generated from physics models. Every API response says so. |
+| **Fleet wells are not calibrated to BGW-01** | BGW-02..12 were generated with per-well parameters (different `oil_max`, `decay_tau`, `spm_setpoint`). The simulator uses BGW-01 constants (OIL_MAX=220, etc.) for all wells — this creates calibration gaps of up to 59% on some wells. The Overview flags gaps > 25% with an amber note. |
+| **Forecast evaluated on 25 rows** | R² reflects learning the deterministic physics, not generalisation to heterogeneous reservoirs. |
+| **GI recall 69.6% at low severity** | Mild gas interference overlaps Normal by design. Cases are flagged "low confidence" rather than silently classified Normal. |
+| **Oil-loss cap uses a simulator baseline, not field measurements** | `oil_change_pct` is relative to what the simulator projects at current SPM — not the recorded CSV oil. The gap between the two is the calibration gap described above. |
+| **Optimizer scores hypothetical candidates with the rule-based risk formula** | No real dynacard exists for a setting not yet applied. The ML classifier runs on current state only and cross-checks the rule-based result. |
+| **VFD fixed at 42 Hz** | Near-zero observed correlation with motor current in the synthetic data. Real VFD optimisation needs wider operating-range data. |
+| **Risk weights are demo assumptions** | 0.35 / 0.30 / 0.20 / 0.15 — not derived from failure statistics. |
+| **No authentication** | Demo only. |
 
 ---
 
@@ -314,33 +322,24 @@ Real weaknesses, stated plainly — judges reward honesty more than spin.
 
 ### Frontend → Vercel
 
-1. Go to [vercel.com/new](https://vercel.com/new), import this repo.
-2. Set **Root Directory** to `shakti-sih/frontend`.
-3. Framework preset: **Next.js**. Deploy.
-4. Add env var `NEXT_PUBLIC_API_URL=https://your-backend-url/api` in project settings.
+```
+Root Directory: shakti-sih/frontend
+Framework: Next.js
+Env var: NEXT_PUBLIC_API_URL=https://your-backend-url/api
+```
 
 ### Backend → Render
 
-1. New Web Service → connect this repo.
-2. Root Directory: `shakti-sih/backend`
-3. Build: `pip install -r requirements.txt && python scripts/train_forecast_model.py && python scripts/train_dynacard_classifier.py`
-4. Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Add env vars: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
-
----
-
-## Roadmap
-
-| Priority | Item |
-|---|---|
-| P1 | Connect to real SCADA / OPC-UA data feed — replace synthetic CSV |
-| P1 | Calibrate risk weights and simulator constants against real failure events |
-| P2 | Multi-well support and per-well model registry |
-| P2 | Real dynacard acquisition hardware integration |
-| P3 | GI classifier retrained on real labelled cards |
-| P3 | VFD optimisation once wider operating-range data is available |
-| P3 | Alerting layer (email / SMS on High risk transitions) |
-| P4 | User authentication and role-based access |
+```
+Root Directory:   shakti-sih/backend
+Build command:    pip install -r requirements.txt &&
+                  python scripts/train_forecast_model.py &&
+                  python scripts/train_dynacard_classifier.py &&
+                  python scripts/generate_fleet.py
+Start command:    uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Env vars:         ALLOWED_ORIGINS=https://tejas-navy.vercel.app,http://localhost:3000
+                  SUPABASE_URL=...  SUPABASE_SECRET_KEY=...  (optional)
+```
 
 ---
 
@@ -350,12 +349,12 @@ Real weaknesses, stated plainly — judges reward honesty more than spin.
 |---|---|
 | Frontend | Next.js 16.3.4, TypeScript, Recharts 3, Tailwind CSS 4, Radix UI |
 | Backend | FastAPI, Python 3.11+, Pydantic v2, Uvicorn |
-| ML — forecast | XGBoost 2.x (two separate regressors) |
-| ML — classifier | scikit-learn RandomForest (300 trees, balanced class weights, 5-fold CV) |
+| ML — forecast | XGBoost 2.x (two separate regressors, recursive) |
+| ML — classifier | scikit-learn RandomForest (300 trees, balanced weights, 5-fold CV) |
 | Feature engineering | NumPy, SciPy (ConvexHull, trapezoid integration) |
-| Data | pandas, synthetic CSV files (no database required) |
-| Tests | pytest + httpx — 116 tests across 8 files |
-| Optional persistence | Supabase (Postgres) |
+| Data | pandas · 3 synthetic CSV files · 2 340 total rows · 12 wells |
+| Tests | pytest + httpx · **212 tests** across 9 files |
+| Optional persistence | Supabase (Postgres) — app works without it |
 
 ---
 
@@ -366,27 +365,52 @@ tejas/
 ├── shakti-sih/
 │   ├── backend/
 │   │   ├── app/
-│   │   │   ├── main.py              # FastAPI app, CORS, router registration
-│   │   │   ├── models.py            # Pydantic request/response schemas
-│   │   │   ├── routers/             # wells · simulate · optimize · dynacards
-│   │   │   └── services/            # 6 service modules
+│   │   │   ├── main.py              # FastAPI app, CORS
+│   │   │   ├── models.py            # Pydantic schemas
+│   │   │   ├── routers/             # wells · simulate · optimize
+│   │   │   │                        # dynacards · fleet · backtest
+│   │   │   └── services/            # 7 service modules
 │   │   ├── data/
-│   │   │   ├── bgw_01_daily.csv     # 180-row synthetic well history
-│   │   │   └── dynacards_synthetic_v1.csv  # 800 synthetic cards
-│   │   ├── models/                  # trained .pkl files + JSON metadata
+│   │   │   ├── bgw_01_daily.csv     # 180 rows — BGW-01 history
+│   │   │   ├── fleet_daily.csv      # 1 980 rows — BGW-02..12
+│   │   │   └── dynacards_synthetic_v1.csv  # 800 cards
+│   │   ├── models/                  # .pkl + JSON metadata
 │   │   ├── scripts/
-│   │   │   ├── generate_dynacards.py        # v3 severity-continuous generator
-│   │   │   ├── train_dynacard_classifier.py # 5-fold CV, 16 features
-│   │   │   └── train_forecast_model.py      # XGBoost, time-based split
-│   │   ├── tests/                   # 116 pytest tests (8 files)
-│   │   └── requirements.txt
+│   │   │   ├── generate_dynacards.py   # severity-continuous card gen
+│   │   │   ├── generate_fleet.py       # 11-well fleet data
+│   │   │   ├── train_dynacard_classifier.py
+│   │   │   ├── train_forecast_model.py
+│   │   │   └── backtest.py             # 180-day replay
+│   │   └── tests/                   # 212 tests across 9 files
 │   ├── frontend/
-│   │   ├── src/app/                 # 8 Next.js pages
-│   │   └── src/components/          # 16 UI components + 6 chart components
+│   │   ├── src/app/dashboard/
+│   │   │   ├── fleet/               # Fleet priority view (landing)
+│   │   │   ├── page.tsx             # Well detail — Overview
+│   │   │   ├── production/          # Forecast + thermal
+│   │   │   ├── srp/                 # Dynacard + SRP health
+│   │   │   ├── optimize/            # Optimizer + oil-loss slider
+│   │   │   ├── simulate/            # What-if simulator
+│   │   │   └── dynacards/           # Card classifier
+│   │   └── src/components/
 │   └── docs/
-│       └── assumptions.md           # explicit modelling assumptions
-└── README.md                        # ← you are here
+│       └── assumptions.md
+└── README.md
 ```
+
+---
+
+## Roadmap
+
+| Priority | Item |
+|---|---|
+| P1 | SCADA / OPC-UA live data feed — replace synthetic CSVs |
+| P1 | Calibrate simulator constants and risk weights per well against real failure data |
+| P2 | Per-well model registry (separate XGBoost models per well) |
+| P2 | Real dynacard acquisition hardware integration |
+| P3 | GI classifier retrained on field-labelled cards |
+| P3 | VFD grid-search once wider operating-range data is available |
+| P3 | Alerting layer — email/SMS on High risk transitions |
+| P4 | User authentication and role-based access |
 
 ---
 

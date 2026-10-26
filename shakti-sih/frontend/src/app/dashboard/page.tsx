@@ -20,7 +20,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { IntroBanner } from "@/components/intro-banner";
 import { BacktestProofCard } from "@/components/backtest-proof-card";
-import { fetchWells, runOptimization } from "@/lib/api";
+import { fetchWells, fetchWell, runOptimization } from "@/lib/api";
+import { useWellId } from "@/lib/use-well-id";
 import { mockExtendedWell, mockOptimizeResponse } from "@/lib/mock-data";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { WellsResponse, OptimizeResponse, ExtendedWellSummary } from "@/types";
@@ -41,6 +42,7 @@ function riskSeverity(label: string): "safe" | "attention" | "danger" {
 }
 
 export default function DashboardPage() {
+  const wellId = useWellId();
   const [wellsData, setWellsData] = useState<WellsResponse | null>(null);
   const [well, setWell] = useState<ExtendedWellSummary>(mockExtendedWell);
   const [optimizeData, setOptimizeData] = useState<OptimizeResponse | null>(null);
@@ -49,39 +51,42 @@ export default function DashboardPage() {
 
   async function loadData() {
     setLoading(true);
-    const wellsResult = await fetchWells();
-    if (!wellsResult.isMock) {
-      setWellsData(wellsResult.data);
-      const base = wellsResult.data.wells[0];
-      if (base) {
-        setWell({
-          ...base,
-          reservoir_pressure_psi: mockExtendedWell.reservoir_pressure_psi,
-          sor: mockExtendedWell.sor,
-          spm: mockExtendedWell.spm,
-          vfd_frequency_hz: mockExtendedWell.vfd_frequency_hz,
-          motor_current_a: mockExtendedWell.motor_current_a,
-          estimated_fillage_pct: mockExtendedWell.estimated_fillage_pct,
-          risk_factors: mockExtendedWell.risk_factors,
-          ml_condition: base.ml_condition,
-          ml_confidence: base.ml_confidence,
-          diagnosis_source: base.diagnosis_source,
-          ml_match_note: base.ml_match_note,
-        });
-      }
+    // Fetch this specific well by ID, not the first item from the list
+    const [wellsResult, wellResult] = await Promise.all([
+      fetchWells(),
+      fetchWell(wellId),
+    ]);
+    if (!wellResult.isMock) {
+      const base = wellResult.data;
+      setWell({
+        ...base,
+        reservoir_pressure_psi: mockExtendedWell.reservoir_pressure_psi,
+        sor: mockExtendedWell.sor,
+        spm: mockExtendedWell.spm,
+        vfd_frequency_hz: mockExtendedWell.vfd_frequency_hz,
+        motor_current_a: mockExtendedWell.motor_current_a,
+        estimated_fillage_pct: mockExtendedWell.estimated_fillage_pct,
+        risk_factors: mockExtendedWell.risk_factors,
+        ml_condition: base.ml_condition,
+        ml_confidence: base.ml_confidence,
+        diagnosis_source: base.diagnosis_source,
+        ml_match_note: base.ml_match_note,
+      });
       setApiDown(false);
     } else {
       setApiDown(true);
-      setWell(mockExtendedWell);
+      setWell({ ...mockExtendedWell, well_id: wellId, well_name: wellId });
     }
-    const optResult = await runOptimization("BGW-01");
+    if (wellsResult.isMock) setApiDown(true);
+    const optResult = await runOptimization(wellId);
     setOptimizeData(optResult.isMock ? mockOptimizeResponse : optResult.data);
     setLoading(false);
   }
 
   useEffect(() => {
     loadData();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wellId]);
 
   const handleReset = () => loadData();
 
@@ -178,7 +183,29 @@ export default function DashboardPage() {
                   ? "attention"
                   : "danger"
             }
-            subtitle={<>SOR {well.sor.toFixed(3)}<InfoTooltip text={TOOLTIPS.sor} /></>}
+            subtitle={(() => {
+              const proj = optimizeData?.current_projected_oil_bpd;
+              if (proj && proj > 0 && well.oil_bpd > 0) {
+                const gap = (proj - well.oil_bpd) / well.oil_bpd * 100;
+                if (Math.abs(gap) > 25) {
+                  return (
+                    <span className="text-attention text-[10px]">
+                      ⚠ model projects {proj.toFixed(1)} bbl/day (
+                      {gap > 0 ? "+" : ""}{gap.toFixed(0)}% vs recorded) —
+                      calibration gap
+                    </span>
+                  );
+                }
+                return (
+                  <>
+                    <span className="text-muted-foreground">recorded · model: </span>
+                    <span className="font-mono">{proj.toFixed(1)}</span>
+                    <span className="text-muted-foreground"> bbl/day</span>
+                  </>
+                );
+              }
+              return <>SOR {well.sor.toFixed(3)}<InfoTooltip text={TOOLTIPS.sor} /></>;
+            })()}
           />
           <KpiCard
             title={<>Risk Score<InfoTooltip text={TOOLTIPS.rodFloatingRisk} /></>}
