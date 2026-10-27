@@ -31,6 +31,7 @@ export interface WellsResponse {
 
 // POST /api/simulate
 export interface SimulateRequest {
+  well_id?: string;
   steam_volume_tonnes?: number;
   soak_time_days?: number;
   spm?: number;

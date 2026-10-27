@@ -1,0 +1,124 @@
+{
+  "_comment": "Per-well physics parameters — single source of truth for both the fleet generator (scripts/generate_fleet.py) and the simulator (app/services/simulator.py). BGW-01 values exactly match the simulator module-level constants so existing outputs are unchanged. Do not edit values to improve backtest results.",
+  "_provenance_key": {
+    "generator_direct": "Value taken verbatim from the WELL_PROFILES dict in scripts/generate_fleet.py",
+    "generator_default": "Field absent from WELL_PROFILES; generator used the module-level default — value inherited from synthetic_data_generator.py / simulator.py constants",
+    "assumed": "Field has no WELL_PROFILES entry and no simulator counterpart. Value chosen to match the intended well scenario (e.g. 'worn pump'); not fitted to data."
+  },
+  "_schema": {
+    "oil_max_bpd":     "Maximum reservoir inflow (bbl/day). Generator: WELL_PROFILES[wid]['oil_max']. Simulator: OIL_MAX_BPD.",
+    "water_cut":       "Fraction of produced liquid that is water (0-1). Generator: WELL_PROFILES[wid]['water_cut']. Simulator: WATER_CUT_BASE.",
+    "decay_tau":       "Exponential cooling time constant during production (days). Generator: WELL_PROFILES[wid]['decay_tau']. Simulator: PRODUCTION_DECAY_TAU.",
+    "fillage_cap":     "Upper bound on pump fillage (%). Generator: WELL_PROFILES[wid]['fillage_cap']. Simulator: clip in compute_fillage().",
+    "motor_base_amps": "Baseline motor current (A). Generator: WELL_PROFILES[wid]['motor_base']. Simulator: CURRENT_BASE.",
+    "prod_days_max":   "Denominator for cycle_prod_progress. Generator: prod_days_range[1] (fixed per well). Simulator previously used observed cycle length — that was the D1 bias. Now uses this value to match generator."
+  },
+  "BGW-01": {
+    "_source": "generator_default — synthetic_data_generator.py module constants; exactly matches simulator.py module-level constants",
+    "oil_max_bpd":     220.0,
+    "water_cut":       0.35,
+    "decay_tau":       10.0,
+    "fillage_cap":     98.0,
+    "motor_base_amps": 28.0,
+    "prod_days_max":   55
+  },
+  "BGW-02": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-02']",
+    "oil_max_bpd":     200.0,
+    "water_cut":       0.30,
+    "decay_tau":       6.0,
+    "fillage_cap":     98.0,
+    "motor_base_amps": 26.0,
+    "prod_days_max":   45
+  },
+  "BGW-03": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-03']",
+    "oil_max_bpd":     180.0,
+    "water_cut":       0.40,
+    "decay_tau":       14.0,
+    "fillage_cap":     95.0,
+    "motor_base_amps": 30.0,
+    "prod_days_max":   55
+  },
+  "BGW-04": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-04']. NOTE: oil_max=160 was intentionally set to model a high water-cut well with lower hydrocarbon productivity; not fitted to field data.",
+    "oil_max_bpd":     160.0,
+    "water_cut":       0.60,
+    "decay_tau":       10.0,
+    "fillage_cap":     98.0,
+    "motor_base_amps": 29.0,
+    "prod_days_max":   50
+  },
+  "BGW-05": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-05']. fillage_cap=65 models worn valves (assumed scenario, not fitted).",
+    "oil_max_bpd":     190.0,
+    "water_cut":       0.35,
+    "decay_tau":       10.0,
+    "fillage_cap":     65.0,
+    "motor_base_amps": 32.0,
+    "prod_days_max":   55
+  },
+  "BGW-06": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-06']. oil_max and motor_base match BGW-01 defaults.",
+    "oil_max_bpd":     220.0,
+    "water_cut":       0.33,
+    "decay_tau":       10.0,
+    "fillage_cap":     98.0,
+    "motor_base_amps": 28.0,
+    "prod_days_max":   55
+  },
+  "BGW-07": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-07']. oil_max=130 and decay_tau=8 model a depleted well; values are scenario-assumed, not fitted.",
+    "oil_max_bpd":     130.0,
+    "water_cut":       0.50,
+    "decay_tau":       8.0,
+    "fillage_cap":     80.0,
+    "motor_base_amps": 33.0,
+    "prod_days_max":   40
+  },
+  "BGW-08": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-08']. fillage_cap=85 and motor_base=28 from generator. gas_multiplier (3x) is a gas-column property not in the simulator; omitted here.",
+    "oil_max_bpd":     200.0,
+    "water_cut":       0.35,
+    "decay_tau":       10.0,
+    "fillage_cap":     85.0,
+    "motor_base_amps": 28.0,
+    "prod_days_max":   55
+  },
+  "BGW-09": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-09']. fillage_cap=98 and motor_base=31 from generator.",
+    "oil_max_bpd":     200.0,
+    "water_cut":       0.35,
+    "decay_tau":       10.0,
+    "fillage_cap":     98.0,
+    "motor_base_amps": 31.0,
+    "prod_days_max":   55
+  },
+  "BGW-10": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-10']. fillage_cap=97 models recently worked-over pump; scenario-assumed.",
+    "oil_max_bpd":     210.0,
+    "water_cut":       0.32,
+    "decay_tau":       9.0,
+    "fillage_cap":     97.0,
+    "motor_base_amps": 27.0,
+    "prod_days_max":   55
+  },
+  "BGW-11": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-11']. fillage_cap=90 is scenario-assumed for a rod-floating risk well.",
+    "oil_max_bpd":     195.0,
+    "water_cut":       0.38,
+    "decay_tau":       9.0,
+    "fillage_cap":     90.0,
+    "motor_base_amps": 30.0,
+    "prod_days_max":   55
+  },
+  "BGW-12": {
+    "_source": "generator_direct — generate_fleet.py WELL_PROFILES['BGW-12']. motor_base=36 models elevated current from maintenance-due equipment; scenario-assumed.",
+    "oil_max_bpd":     175.0,
+    "water_cut":       0.42,
+    "decay_tau":       10.0,
+    "fillage_cap":     75.0,
+    "motor_base_amps": 36.0,
+    "prod_days_max":   50
+  }
+}

@@ -20,6 +20,7 @@ from fastapi import APIRouter, HTTPException
 from app.models import BestOption, OptimizeRequest, OptimizeResponse
 from app.services.data_service import get_dataframe
 from app.services.optimizer import optimise, optimize_css_cycle
+from app.services.well_params_service import get_well_params
 
 router = APIRouter(tags=["optimize"])
 
@@ -55,6 +56,7 @@ def optimize_well(well_id: str, req: OptimizeRequest | None = None) -> OptimizeR
         raise HTTPException(status_code=404, detail=f"Well '{well_id}' not found.")
 
     latest = well_df.iloc[-1]
+    wp = get_well_params(well_id)
 
     current_temp = float(latest["reservoir_temperature_c"])
     css_stage = str(latest["css_stage"])
@@ -69,12 +71,8 @@ def optimize_well(well_id: str, req: OptimizeRequest | None = None) -> OptimizeR
     cycle_prod_progress = 0.0
     if css_stage == "production":
         day_in_stage = int(latest["days_since_steam_injection"])
-        prod_rows = well_df[
-            (well_df["css_cycle_no"] == latest["css_cycle_no"])
-            & (well_df["css_stage"] == "production")
-        ]
-        total_prod_days = max(len(prod_rows), 1)
-        cycle_prod_progress = day_in_stage / total_prod_days
+        # Use prod_days_max (generator's fixed denominator) — fixes D1 bias
+        cycle_prod_progress = min(1.0, day_in_stage / max(wp.prod_days_max, 1))
 
     result = optimise(
         current_temp_c=current_temp,
@@ -90,6 +88,7 @@ def optimize_well(well_id: str, req: OptimizeRequest | None = None) -> OptimizeR
         vfd_range=req.vfd_range if req else None,
         steam_range=req.steam_range if req else None,
         max_oil_loss_pct=req.max_oil_loss_pct if req else 15.0,
+        well_params=wp,
     )
 
     if "error" in result:

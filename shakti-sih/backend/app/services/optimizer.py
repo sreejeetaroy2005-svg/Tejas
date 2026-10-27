@@ -45,6 +45,7 @@ field data or economic models.
 """
 
 from app.services.simulator import simulate_next_day
+from app.services.well_params_service import WellParams
 
 # ---------------------------------------------------------------------------
 # Search-space defaults (matching generator clipping ranges)
@@ -258,6 +259,7 @@ def optimise(
     vfd_range: tuple[float, float] | None = None,  # kept for API compat; ignored
     steam_range: tuple[float, float] | None = None,
     max_oil_loss_pct: float = 15.0,
+    well_params: "WellParams | None" = None,
 ) -> dict:
     """Run grid search and return the best operating point.
 
@@ -293,6 +295,17 @@ def optimise(
     # VFD fixed at representative value — not grid-searched
     vfd_val = DEFAULT_VFD_FIXED_HZ
 
+    # Per-well simulator kwargs — defaults to BGW-01 values if well_params is None
+    _wp = well_params
+    _wp_kw: dict = {}
+    if _wp is not None:
+        _wp_kw = {
+            "oil_max_bpd":     _wp.oil_max_bpd,
+            "water_cut":       _wp.water_cut,
+            "decay_tau":       _wp.decay_tau,
+            "fillage_cap":     _wp.fillage_cap,
+            "motor_base_amps": _wp.motor_base_amps,
+        }
     candidates: list[dict] = []
 
     spm_val = spm_lo
@@ -307,6 +320,7 @@ def optimise(
                 vfd_hz=vfd_val,
                 current_sor=current_sor,
                 steam_volume_tonnes=steam_val,
+                **_wp_kw,
             )
             score = composite_score(
                 oil_bpd=projected["oil_bpd"],
@@ -366,6 +380,7 @@ def optimise(
         vfd_hz=vfd_val,
         current_sor=current_sor,
         steam_volume_tonnes=_current_steam_approx,
+        **_wp_kw,
     )
     # This is the simulator's baseline oil for all pct comparisons.
     _oil_baseline = _current_proj["oil_bpd"]  # always > 0 if simulation succeeds

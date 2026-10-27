@@ -55,6 +55,11 @@ from app.services.optimizer import (
     DEFAULT_STEAM_STEP,
     DEFAULT_VFD_FIXED_HZ,
 )
+from app.services.well_params_service import get_well_params as _get_well_params
+
+# BGW-01 params — passed explicitly so the backtest is self-documenting
+# and provably unchanged when well_params.json is modified.
+_BGW01_WP = _get_well_params("BGW-01")
 
 # ---------------------------------------------------------------------------
 # Optimizer settings used in this backtest run — recorded in the output JSON
@@ -84,20 +89,19 @@ _OUT_IMG     = os.path.join(_SCRIPT_DIR, "..", "..", "docs", "img", "backtest.pn
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _cycle_prod_progress(df: pd.DataFrame) -> pd.Series:
+def _cycle_prod_progress(df: pd.DataFrame, prod_days_max: int = 55) -> pd.Series:
     """Fraction (0–1) through the production stage for each row.
 
-    Uses days_since_steam_injection divided by the max value within that
-    CSS cycle.  Clamped to [0, 1].  Rows in injection/soak stages use 0.0
-    because the production decline factor is irrelevant there (oil_bpd=0).
+    Uses days_since_steam_injection divided by prod_days_max (the generator's
+    fixed denominator for BGW-01 = 55), NOT the observed cycle length.
+    Using the observed cycle length was the D1 bias: shorter cycles advanced
+    prog faster than the generator intended, producing steeper decline and
+    lower projected oil.
+
+    Rows in injection/soak stages use 0.0 (decline factor irrelevant there).
     """
-    max_per_cycle = df.groupby("css_cycle_no")["days_since_steam_injection"].transform("max")
-    # Avoid division by zero for single-day cycles
-    max_per_cycle = max_per_cycle.replace(0, 1)
-    progress = (df["days_since_steam_injection"] / max_per_cycle).clip(0.0, 1.0)
-    # Injection rows: progress is meaningless for production decline, zero it
-    progress = progress.where(df["css_stage"] == "production", 0.0)
-    return progress
+    progress = (df["days_since_steam_injection"] / prod_days_max).clip(0.0, 1.0)
+    return progress.where(df["css_stage"] == "production", 0.0)
 
 
 def _eval_day(row: pd.Series, spm: float, steam: float, progress: float) -> dict:
@@ -122,6 +126,12 @@ def _eval_day(row: pd.Series, spm: float, steam: float, progress: float) -> dict
         current_sor          = float(row["sor"]),
         steam_volume_tonnes  = steam_arg,
         injection_pressure_psi = inj_pressure,
+        # BGW-01 params — explicit so the backtest is self-documenting
+        oil_max_bpd     = _BGW01_WP.oil_max_bpd,
+        water_cut       = _BGW01_WP.water_cut,
+        decay_tau       = _BGW01_WP.decay_tau,
+        fillage_cap     = _BGW01_WP.fillage_cap,
+        motor_base_amps = _BGW01_WP.motor_base_amps,
     )
 
 
@@ -137,7 +147,8 @@ def _tejas_settings(row: pd.Series, progress: float) -> tuple[float, float]:
         current_oil_bpd      = float(row["oil_bpd"]),
         current_risk_score   = float(row["rod_floating_risk_score"]),
         current_viscosity_cp = float(row["viscosity_cp"]),
-        max_oil_loss_pct     = BACKTEST_MAX_OIL_LOSS_PCT,  # explicit, not default
+        max_oil_loss_pct     = BACKTEST_MAX_OIL_LOSS_PCT,
+        well_params          = _BGW01_WP,  # explicit BGW-01 params
     )
     best = result["best_option"]
     return float(best["spm"]), float(best["steam_volume_tonnes"])
@@ -150,7 +161,7 @@ def _tejas_settings(row: pd.Series, progress: float) -> tuple[float, float]:
 def run_backtest(verbose: bool = True) -> dict:
     """Run the full 180-day backtest.  Returns the results dict."""
     df = pd.read_csv(_DATA_PATH)
-    progress = _cycle_prod_progress(df)
+    progress = _cycle_prod_progress(df, prod_days_max=_BGW01_WP.prod_days_max)
 
     baseline_rows: list[dict] = []
     tejas_rows:    list[dict] = []

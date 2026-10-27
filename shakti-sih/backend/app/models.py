@@ -133,11 +133,17 @@ class HistoryResponse(BaseModel):
 class SimulateRequest(BaseModel):
     """Override values for a what-if simulation.
 
-    All fields are optional — omitted fields use the well's current values.
+    All fields are optional — omitted fields use the well's most recent values
+    from the dataset.  well_id selects the well; defaults to the last row in
+    the dataframe (BGW-01 behaviour) when omitted for backward compatibility.
     spm lower bound matches SPM_MIN_OPERATIONAL in simulator.py (4.0 SPM —
     the wax-deposition / gas-lock floor for heavy-oil CSS SRP).
     """
 
+    well_id: str | None = Field(
+        default=None,
+        description="Well to simulate. Defaults to the last row in the dataset when omitted.",
+    )
     steam_volume_tonnes: float | None = Field(
         None,
         ge=100,

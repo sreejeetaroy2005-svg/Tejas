@@ -98,7 +98,7 @@ export default function SimulatePage() {
     async (overrides: typeof DEFAULTS) => {
       setSimulating(true);
       try {
-        const simResult = await runSimulation(overrides);
+        const simResult = await runSimulation(overrides, wellId);
         if (!simResult.isMock) {
           setResult(simResult.data);
           setApiDown(false);

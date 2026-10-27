@@ -12,6 +12,7 @@ from app.models import (
 )
 from app.services.data_service import get_dataframe
 from app.services.simulator import simulate_next_day
+from app.services.well_params_service import get_well_params
 
 router = APIRouter(tags=["simulate"])
 
@@ -36,7 +37,19 @@ def run_simulation(req: SimulateRequest) -> SimulateResponse:
     plain-language explanation of the key drivers.
     """
     df = get_dataframe()
-    latest = df.iloc[-1]
+
+    # Select well: use req.well_id if provided, else fall back to the last row
+    # (preserves backward compatibility with callers that omit well_id).
+    if req.well_id:
+        well_df = df[df["well_id"] == req.well_id]
+        if well_df.empty:
+            raise HTTPException(status_code=404, detail=f"Well '{req.well_id}' not found.")
+        latest = well_df.iloc[-1]
+    else:
+        latest = df.iloc[-1]
+
+    well_id = str(latest["well_id"])
+    wp = get_well_params(well_id)
 
     # Current state from latest row
     current_temp = float(latest["reservoir_temperature_c"])
@@ -49,21 +62,16 @@ def run_simulation(req: SimulateRequest) -> SimulateResponse:
     cycle_prod_progress = 0.0
     if css_stage == "production":
         day_in_stage = int(latest["days_since_steam_injection"])
-        # Estimate total production days from the data
-        prod_rows = df[
-            (df["well_id"] == latest["well_id"])
-            & (df["css_cycle_no"] == latest["css_cycle_no"])
-            & (df["css_stage"] == "production")
-        ]
-        total_prod_days = max(len(prod_rows), 1)
-        cycle_prod_progress = day_in_stage / max(total_prod_days, 1)
+        # Use the well's prod_days_max (generator's fixed denominator) so the
+        # simulator's decline curve matches the generator's — fixes D1 bias.
+        cycle_prod_progress = min(1.0, day_in_stage / max(wp.prod_days_max, 1))
 
     # Apply overrides
     spm = req.spm if req.spm is not None else current_spm
     vfd = req.vfd_frequency_hz if req.vfd_frequency_hz is not None else current_vfd
     steam = req.steam_volume_tonnes  # None means not overridden
 
-    # Run simulation
+    # Run simulation with per-well physics parameters
     result = simulate_next_day(
         current_temp_c=current_temp,
         css_stage=css_stage,
@@ -72,6 +80,11 @@ def run_simulation(req: SimulateRequest) -> SimulateResponse:
         vfd_hz=vfd,
         current_sor=current_sor,
         steam_volume_tonnes=steam,
+        oil_max_bpd=wp.oil_max_bpd,
+        water_cut=wp.water_cut,
+        decay_tau=wp.decay_tau,
+        fillage_cap=wp.fillage_cap,
+        motor_base_amps=wp.motor_base_amps,
     )
 
     # Build explanation

@@ -113,13 +113,15 @@ export async function fetchHistory(
 // POST /api/simulate
 // ---------------------------------------------------------------------------
 export async function runSimulation(
-  req: SimulateRequest
+  req: SimulateRequest,
+  wellId?: string,
 ): Promise<Result<SimulateResponse>> {
   try {
+    const body: SimulateRequest = wellId ? { ...req, well_id: wellId } : req;
     const res = await fetch(`${API_BASE}/simulate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return { data: await res.json(), isMock: false };

@@ -163,13 +163,17 @@ def compute_viscosity(temp_c: float) -> float:
     return max(MU_MIN * 0.9, min(MU_MAX * 1.05, mu))
 
 
-def compute_fillage(mu_norm: float, spm: float) -> float:
-    """Pump fillage from viscosity normalised and SPM."""
+def compute_fillage(mu_norm: float, spm: float, fillage_cap: float = 98.0) -> float:
+    """Pump fillage from viscosity normalised and SPM.
+
+    fillage_cap (default 98%) models pump condition: worn valves/plunger
+    reduce the maximum achievable fillage.  Read from well_params.json.
+    """
     spm_excess = (
         max(0.0, spm - OPTIMAL_SPM_AT_HIGH_VISCOSITY) if mu_norm > 0.5 else 0.0
     )
     fillage = FILLAGE_INTERCEPT - FILLAGE_VISCOSITY_COEFF * mu_norm - FILLAGE_SPM_COEFF * spm_excess
-    return max(15.0, min(98.0, fillage))
+    return max(15.0, min(fillage_cap, fillage))
 
 
 def compute_pump_capacity(spm: float, fillage_pct: float) -> float:
@@ -190,18 +194,21 @@ def compute_pump_capacity(spm: float, fillage_pct: float) -> float:
     return spm * MINUTES_PER_DAY * STROKE_VOLUME_BBL * (fillage_pct / 100.0)
 
 
-def compute_motor_current(mu_norm: float, fillage_pct: float, vfd_hz: float = VFD_NOMINAL_HZ) -> float:
-    """Motor current from viscosity, fillage deficit, and VFD frequency.
+def compute_motor_current(
+    mu_norm: float,
+    fillage_pct: float,
+    vfd_hz: float = VFD_NOMINAL_HZ,
+    motor_base_amps: float = CURRENT_BASE,
+) -> float:
+    """Motor current from viscosity, fillage deficit, VFD frequency, and motor baseline.
 
-    VFD effect is an approximate linear scaling around VFD_NOMINAL_HZ.
-    A lower VFD reduces current slightly; a higher VFD raises it slightly.
-    See module docstring for calibration note.
+    motor_base_amps varies per well (worn or high-load wells draw more
+    baseline current).  Read from well_params.json.
     """
     fillage_deficit = max(0.0, (70 - fillage_pct) / 70)
-    base_current = CURRENT_BASE + CURRENT_VISCOSITY_COEFF * mu_norm + CURRENT_FILLAGE_COEFF * fillage_deficit
-    # Apply VFD scaling: positive coefficient → higher Hz → higher current
+    base_current = motor_base_amps + CURRENT_VISCOSITY_COEFF * mu_norm + CURRENT_FILLAGE_COEFF * fillage_deficit
     vfd_factor = 1.0 + VFD_CURRENT_HZ_COEFF * (vfd_hz - VFD_NOMINAL_HZ)
-    vfd_factor = max(0.80, min(1.20, vfd_factor))  # clamp to ±20%
+    vfd_factor = max(0.80, min(1.20, vfd_factor))
     current = base_current * vfd_factor
     return max(20.0, min(60.0, current))
 
@@ -231,6 +238,32 @@ def project_temperature(temp_c: float, css_stage: str, injection_pressure_psi: f
     return max(T_BASELINE - 2, min(T_PEAK + 5, t_new))
 
 
+def _project_temperature_with_tau(
+    temp_c: float,
+    css_stage: str,
+    decay_tau: float,
+    injection_pressure_psi: float | None = None,
+) -> float:
+    """Like project_temperature() but uses the supplied decay_tau.
+
+    This is the internal helper called by simulate_next_day() so that
+    per-well decay constants are honoured.  The public project_temperature()
+    function still uses the BGW-01 module constant for backward compatibility.
+    """
+    if css_stage == "injection":
+        step = INJECTION_STEP
+        if injection_pressure_psi is not None:
+            diff_norm = (injection_pressure_psi - OPTIMAL_INJECTION_PRESSURE) / 100.0
+            multiplier = max(0.4, 1.2 - 0.2 * (diff_norm ** 2))
+            step = step * multiplier
+        t_new = min(T_PEAK, temp_c + step)
+    elif css_stage == "soak":
+        t_new = temp_c + SOAK_DRIFT
+    else:  # production — use per-well decay_tau
+        t_new = T_BASELINE + (temp_c - T_BASELINE) * math.exp(-1.0 / decay_tau)
+    return max(T_BASELINE - 2, min(T_PEAK + 5, t_new))
+
+
 def simulate_next_day(
     current_temp_c: float,
     css_stage: str,
@@ -240,6 +273,18 @@ def simulate_next_day(
     current_sor: float,
     steam_volume_tonnes: float | None = None,
     injection_pressure_psi: float | None = None,
+    # ----------------------------------------------------------------
+    # Per-well physics parameters (optional — default to BGW-01 values)
+    # ----------------------------------------------------------------
+    # These are the five parameters that vary across fleet wells.
+    # Pass get_well_params(well_id) values here for accurate per-well
+    # simulation.  Omitting them preserves exact BGW-01 behaviour.
+    oil_max_bpd:     float = OIL_MAX_BPD,
+    water_cut:       float = WATER_CUT_BASE,
+    decay_tau:       float = PRODUCTION_DECAY_TAU,
+    fillage_cap:     float = 98.0,
+    motor_base_amps: float = CURRENT_BASE,
+    prod_days_max:   int   = 55,
 ) -> dict:
     """Project the next day's operating values (deterministic, no noise).
 
@@ -248,24 +293,28 @@ def simulate_next_day(
         css_stage: Current CSS stage ("injection", "soak", "production").
         cycle_prod_progress: How far through the production stage (0.0–1.0).
         spm: Strokes per minute (after override).
-        vfd_hz: VFD frequency (Hz) — used in the motor current model via a
-                simple linear scaling (see module docstring and
-                compute_motor_current).  Effect is approximate.
+        vfd_hz: VFD frequency (Hz).
         current_sor: Trailing steam-oil ratio from the latest data row.
         steam_volume_tonnes: Override steam volume (only used for SOR estimate
                              during injection).
-        injection_pressure_psi: Steam injection pressure (psi). Controls heat
-                                transfer efficiency during injection stage.
+        injection_pressure_psi: Steam injection pressure (psi).
+        oil_max_bpd: Maximum reservoir inflow (bpd). Default: BGW-01 value (220).
+        water_cut: Fraction of produced liquid that is water (0–1). Default: 0.35.
+        decay_tau: Production cooling time constant (days). Default: BGW-01 value (10).
+        fillage_cap: Upper bound on pump fillage (%). Default: 98 (good pump).
+        motor_base_amps: Baseline motor current (A). Default: BGW-01 value (28).
+        prod_days_max: Denominator for cycle_prod_progress calculation. Must match
+            the generator's PRODUCTION_DAYS_RANGE[1] for the well (default 55,
+            BGW-01 value). The generator computes cycle_prod_progress as
+            days_since_injection / prod_days_range[1] (fixed constant), NOT as
+            days_since_injection / observed_cycle_length. Using the wrong value
+            here causes systematic under-prediction (D1 bias).
 
     Returns:
         Dict with projected values and risk assessment.
-        risk_score / risk_label are from the rule-based risk_engine formula —
-        they are a proxy used by the optimizer for ranking hypothetical
-        candidates, NOT the same metric as the ML-classified condition shown
-        on real-well status pages.  See diagnosis_source in WellSummary.
     """
-    # 1. Temperature
-    t_new = project_temperature(current_temp_c, css_stage, injection_pressure_psi)
+    # 1. Temperature — use per-well decay_tau for the production cool-down
+    t_new = _project_temperature_with_tau(current_temp_c, css_stage, decay_tau, injection_pressure_psi)
 
     # 2. Viscosity
     mu = compute_viscosity(t_new)
@@ -278,23 +327,17 @@ def simulate_next_day(
     oil_bpd = 0.0
     if css_stage != "injection":
         # Reservoir inflow: what the formation can deliver given viscosity + decline
-        reservoir_inflow = OIL_MAX_BPD * viscosity_factor * decline_factor
-        reservoir_inflow = max(5.0, min(OIL_MAX_BPD, reservoir_inflow))
+        reservoir_inflow = oil_max_bpd * viscosity_factor * decline_factor
+        reservoir_inflow = max(5.0, min(oil_max_bpd, reservoir_inflow))
 
         # Pump capacity: what the pump can physically lift at this SPM + fillage
-        # (fillage is computed just below — call compute_fillage first)
-        # Note: fillage must be computed before this block to avoid circular
-        # dependency.  We compute it here early for the capacity check.
-        _fillage_for_cap = compute_fillage(mu_norm, spm)
+        _fillage_for_cap = compute_fillage(mu_norm, spm, fillage_cap=fillage_cap)
         pump_cap = compute_pump_capacity(spm, _fillage_for_cap)
 
-        # Actual production = min of the two limits
-        # If pump_cap < inflow: pump-limited (SPM is the bottleneck)
-        # If pump_cap >= inflow: reservoir-limited (SPM could be reduced)
         oil_bpd = min(reservoir_inflow, pump_cap)
-        oil_bpd = max(5.0, min(OIL_MAX_BPD, oil_bpd))
+        oil_bpd = max(5.0, min(oil_max_bpd, oil_bpd))
 
-    water_bpd = max(0.0, oil_bpd * (WATER_CUT_BASE / (1 - WATER_CUT_BASE)))
+    water_bpd = max(0.0, oil_bpd * (water_cut / (1 - water_cut)))
 
     # 4. SOR estimate
     if css_stage == "injection" and steam_volume_tonnes and oil_bpd > 0:
@@ -304,9 +347,9 @@ def simulate_next_day(
     else:
         sor = 0.0
 
-    # 5. Pump behaviour
-    fillage_pct = compute_fillage(mu_norm, spm)
-    motor_current = compute_motor_current(mu_norm, fillage_pct, vfd_hz)
+    # 5. Pump behaviour — use per-well fillage_cap and motor_base_amps
+    fillage_pct = compute_fillage(mu_norm, spm, fillage_cap=fillage_cap)
+    motor_current = compute_motor_current(mu_norm, fillage_pct, vfd_hz, motor_base_amps=motor_base_amps)
     energy_kwh = compute_energy(spm, motor_current)
 
     # 6. Risk
